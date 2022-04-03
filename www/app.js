@@ -1,15 +1,4 @@
 async function input() {
-    let book1 = {
-        id: 5893,
-        title: "Test book!",
-        created_at: Date.now()
-    }
-    let book2 = {
-        id: 5894,
-        title: "Another book!",
-        created_at: Date.now()
-    }
-
     // Open repository
     // Ошибки запросов в транзакции вызывают отмену транзакции,
     // только если всплытие ошибки недвусмысленно не предотвращено
@@ -20,18 +9,25 @@ async function input() {
 
     // Set listeners.
     setListeners(repository)
+}
 
-    // Test transaction
-    try {
-        const transactionResult = await repository.transaction(async transaction => {
-            let booksStore = transaction.objectStore("books")
-            let request = booksStore.add(book1)
-            booksStore.add(book2)
-            return [book1, book2]
-        })
-        console.log("Transaction has been completed:", transactionResult)
-    } catch (error) {
-        console.warn("Unable to execute a transaction:", error)
+class CoingeckoRepository {
+    #apiDomain = "https://api.coingecko.com/api/v3"
+
+    async getSupportedVsCurrencies() {
+        return await this.#request("/simple/supported_vs_currencies")
+    }
+
+    async getExchangeRates() {
+        return await this.#request("/exchange_rates")
+    }
+
+    async #request(url) {
+        const response = await fetch(this.#apiDomain + url, { headers: { "Accept": "application/json" } })
+        if (response.status != 200) {
+            throw new Error(`Wrong API response code (${response.status})`)
+        }
+        return await response.json()
     }
 }
 
@@ -41,8 +37,57 @@ class IndexedDBRepository {
     #dbName = "test"
     #dbVersion = 3
 
+    #books_store_name = "books"
+    #supported_vs_currencies_store_name = "supported_vs_currencies"
+    #exchange_rates_store_name = "exchange_rates"
+
     get dbName() {
         return this.#dbName
+    }
+
+    /**
+     * @param {string} symbol1 
+     * @param {string} symbol2 
+     * @returns {Promise<number>}
+     */
+    async getExchangeRate(symbol1, symbol2) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#exchange_rates_store_name)
+            const cur1 = await this.#promiseRequest(store.get(symbol1))
+            const cur2 = await this.#promiseRequest(store.get(symbol2))
+
+            return (cur2["value"] / cur1["value"])
+        }, "readonly")
+    }
+
+    /**
+     * @param {object} data
+     * @returns {Promise<object[]>}
+     */
+    async updateExchangeRates(data) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#exchange_rates_store_name)
+            for (const [key, value] of Object.entries(data)) {
+                store.put(Object.assign({ "symbol": key }, value))
+            }
+
+            return await this.#promiseRequest(store.getAll())
+        })
+    }
+
+    /**
+     * @param {string[]} currencies 
+     * @returns {Promise<string[]>}
+     */
+    async updateSupportedCurrencies(currencies) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#supported_vs_currencies_store_name)
+            for (let symbol of currencies) {
+                store.put({ "symbol": symbol })
+            }
+
+            return currencies
+        })
     }
 
     /**
@@ -78,10 +123,53 @@ class IndexedDBRepository {
     }
 
     /**
+     * @param {IDBVersionChangeEvent} event
+     */
+    #migrateIndexedDB(event) {
+        console.warn(`Upgrade needed! [${event.oldVersion} to ${event.newVersion}]`)
+
+        /** @type {IDBDatabase} */
+        const db = event.target.result
+
+        const migrations = {
+            1: () => {
+                db.createObjectStore(this.#supported_vs_currencies_store_name, { keyPath: "symbol" })
+            },
+            2: () => {
+                db.createObjectStore(this.#exchange_rates_store_name, { keyPath: "symbol" })
+            },
+            3: () => {
+                // nothing
+            },
+        }
+
+        for (let i = event.oldVersion + 1; i <= event.newVersion; i++) {
+            if (!(i in migrations)) {
+                console.error(`Migration "${i}" does not exist!`)
+                break
+            }
+
+            migrations[i]()
+            console.info(`Migration "${i}" has been applied.`)
+        }
+    }
+
+    /**
+     * @param {IDBRequest} request 
+     * @returns {Promise<any>}
+     */
+    async #promiseRequest(request) {
+        return new Promise((resolve, reject) => {
+            request.onerror = event => reject(event.target.error)
+            request.onsuccess = event => resolve(event.target.result)
+        })
+    }
+
+    /**
      * @param {function(IDBTransaction):Promise<any>} transactionBody 
      * @returns {Promise<any>}
      */
-    async transaction(transactionBody, mode = "readwrite") {
+    async #transaction(transactionBody, mode = "readwrite") {
         return new Promise((resolve, reject) => {
             const transaction = this.#db.transaction(this.#db.objectStoreNames, mode)
             const transactionResultPromise = transactionBody(transaction)
@@ -106,34 +194,6 @@ class IndexedDBRepository {
             + " Please, close another tabs before update."
         console.warn(msg, event)
         alert(msg)
-    }
-
-    /**
-     * @param {IDBVersionChangeEvent} event
-     */
-    #migrateIndexedDB(event) {
-        console.warn(`Upgrade needed! [${event.oldVersion} to ${event.newVersion}]`)
-
-        /** @type {IDBDatabase} */
-        const db = event.target.result
-
-        let migrations = {
-            1: function () {
-                db.createObjectStore("books", { keyPath: "id" })
-            },
-            2: function () { console.log("Migration has been started.") },
-            3: function () { console.log("Migration has been started.") },
-        }
-
-        for (let i = event.oldVersion + 1; i <= event.newVersion; i++) {
-            if (!(i in migrations)) {
-                console.error(`Migration "${i}" does not exist!`)
-                break
-            }
-
-            migrations[i]()
-            console.info(`Migration "${i}" has been applied.`)
-        }
     }
 }
 
@@ -162,11 +222,21 @@ function delay(ms) {
  */
 function setListeners(repository) {
     safeOnClick(document.getElementById("add_item"), async () => {
-        let amount = prompt("Enter the amount of money:")
+        const amount = prompt("Enter the amount of money:")
         console.log(`Received: ${amount}`)
     })
     safeOnClick(document.getElementById("update_exchange_rates"), async () => {
+        try {
+            const coingeckoRepository = new CoingeckoRepository()
+            const rawRates = await coingeckoRepository.getExchangeRates()
+            const exchangeRates = await repository.updateExchangeRates(rawRates["rates"])
+            console.log("Echange rates have been updated:", exchangeRates)
 
+            const usdRubRate = await repository.getExchangeRate("usd", "rub")
+            console.log("usd/rub rate:", usdRubRate)
+        } catch (error) {
+            console.error("Unable to update echange rates", error)
+        }
     })
     safeOnClick(document.getElementById("delete_db"), async () => {
         try {
