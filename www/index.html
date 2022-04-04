@@ -21,6 +21,17 @@
                     <th>Currency</th>
                     <th>Action</th>
                 </tr>
+                <tr>
+                    <td>
+                        <input type="number" id="add_amount" />
+                    </td>
+                    <td>
+                        <select id="add_currency"></select>
+                    </td>
+                    <td>
+                        <button id="add_button">Add</button>
+                    </td>
+                </tr>
             </thead>
             <tfoot>
                 <tr>
@@ -28,30 +39,20 @@
                 </tr>
                 <tr>
                     <td>0</td>
-                    <td>BTC</td>
-                    <td>
-                        <button id="delete_db">Delete DB</button>
+                    <td colspan="2">
+                        <select id="total_currency"></select>
                     </td>
                 </tr>
             </tfoot>
             <tbody>
-                <tr>
-                    <td>
-                        <input type="number" id="amount" />
-                    </td>
-                    <td>
-                        <select id="type">
-                            <option>kek</option>
-                            <option>lol</option>
-                            <option>ok</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button id="add_new_amount">Add</button>
-                    </td>
-                </tr>
+
             </tbody>
         </table>
+    </div>
+
+    <div>
+        <br>
+        <button id="delete_db">Delete DB</button>
     </div>
 
     <script type="module" src="js/input.js"></script>

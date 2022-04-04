@@ -13,6 +13,22 @@ export class IndexedDBRepository {
     }
 
     /**
+     * @param {string} symbol 
+     * @returns {Promise<object>}
+     */
+    async getBtcToSymbolExchangeRate(symbol) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#exchange_rates_store_name)
+            const value = await this.#promiseRequest(store.get(symbol))
+            if (value === undefined) {
+                throw new Error(`Wrong symbol: "${symbol}"`)
+            }
+
+            return value
+        }, "readonly")
+    }
+
+    /**
      * @param {string} symbol1 
      * @param {string} symbol2 
      * @returns {Promise<number>}
@@ -24,6 +40,16 @@ export class IndexedDBRepository {
             const cur2 = await this.#promiseRequest(store.get(symbol2))
 
             return (cur2["value"] / cur1["value"])
+        }, "readonly")
+    }
+
+    /**
+    * @returns {Promise<string[]>}
+    */
+    async getSymbols() {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#exchange_rates_store_name)
+            return await this.#promiseRequest(store.getAllKeys())
         }, "readonly")
     }
 
@@ -90,6 +116,49 @@ export class IndexedDBRepository {
     }
 
     /**
+     * @param {IDBRequest} request 
+     * @returns {Promise<any>}
+     */
+    async #promiseRequest(request) {
+        return new Promise((resolve, reject) => {
+            request.onerror = event => reject(event.target.error)
+            request.onsuccess = event => resolve(event.target.result)
+        })
+    }
+
+    /**
+     * @param {function(IDBTransaction):Promise<any>} transactionBody 
+     * @param {"readonly"|"readwrite"} mode
+     * @returns {Promise<any>}
+     */
+    async #transaction(transactionBody, mode = "readwrite") {
+        return new Promise((resolve, reject) => {
+            const transaction = this.#db.transaction(this.#db.objectStoreNames, mode)
+            const transactionResultPromise = transactionBody(transaction)
+
+            transaction.onabort = event => reject(event.target.error)
+            transaction.oncomplete = () => {
+                transactionResultPromise
+                    .then(result => resolve(result))
+                    .catch(error => reject(error))
+            }
+        })
+    }
+
+    /**
+     * @param {IDBVersionChangeEvent} event 
+     */
+    #onBlocked(event) {
+        // There is another connection to the DB.
+        // And this connection was not closed after firing the "db.onversionchange" there.
+        const msg = "Unable to update the DB version (or delete the DB)!"
+            + " There is an another connection to the same DB."
+            + " Please, close another tabs before update."
+        console.warn(msg, event)
+        alert(msg)
+    }
+
+    /**
      * @param {IDBVersionChangeEvent} event
      */
     #migrateIndexedDB(event) {
@@ -119,47 +188,5 @@ export class IndexedDBRepository {
             migrations[i]()
             console.info(`Migration "${i}" has been applied.`)
         }
-    }
-
-    /**
-     * @param {IDBRequest} request 
-     * @returns {Promise<any>}
-     */
-    async #promiseRequest(request) {
-        return new Promise((resolve, reject) => {
-            request.onerror = event => reject(event.target.error)
-            request.onsuccess = event => resolve(event.target.result)
-        })
-    }
-
-    /**
-     * @param {function(IDBTransaction):Promise<any>} transactionBody 
-     * @returns {Promise<any>}
-     */
-    async #transaction(transactionBody, mode = "readwrite") {
-        return new Promise((resolve, reject) => {
-            const transaction = this.#db.transaction(this.#db.objectStoreNames, mode)
-            const transactionResultPromise = transactionBody(transaction)
-
-            transaction.onabort = event => reject(event.target.error)
-            transaction.oncomplete = () => {
-                transactionResultPromise
-                    .then(result => resolve(result))
-                    .catch(error => reject(error))
-            }
-        })
-    }
-
-    /**
-     * @param {IDBVersionChangeEvent} event 
-     */
-    #onBlocked(event) {
-        // There is another connection to the DB.
-        // And this connection was not closed after firing the "db.onversionchange" there.
-        const msg = "Unable to update the DB version (or delete the DB)!"
-            + " There is an another connection to the same DB."
-            + " Please, close another tabs before update."
-        console.warn(msg, event)
-        alert(msg)
     }
 }
