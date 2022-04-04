@@ -1,37 +1,4 @@
-async function input() {
-    // Open repository
-    // Ошибки запросов в транзакции вызывают отмену транзакции,
-    // только если всплытие ошибки недвусмысленно не предотвращено
-    // методом Event.preventDefault() внутри IDBRequest.onerror().
-    let repository = new IndexedDBRepository()
-    await repository.open()
-    console.log(`IndexedDB "${repository.dbName}" has been opened.`)
-
-    // Set listeners.
-    setListeners(repository)
-}
-
-class CoingeckoRepository {
-    #apiDomain = "https://api.coingecko.com/api/v3"
-
-    async getSupportedVsCurrencies() {
-        return await this.#request("/simple/supported_vs_currencies")
-    }
-
-    async getExchangeRates() {
-        return await this.#request("/exchange_rates")
-    }
-
-    async #request(url) {
-        const response = await fetch(this.#apiDomain + url, { headers: { "Accept": "application/json" } })
-        if (response.status != 200) {
-            throw new Error(`Wrong API response code (${response.status})`)
-        }
-        return await response.json()
-    }
-}
-
-class IndexedDBRepository {
+export class IndexedDBRepository {
     /** @type {IDBDatabase} */
     #db
     #dbName = "test"
@@ -126,7 +93,7 @@ class IndexedDBRepository {
      * @param {IDBVersionChangeEvent} event
      */
     #migrateIndexedDB(event) {
-        console.warn(`Upgrade needed! [${event.oldVersion} to ${event.newVersion}]`)
+        console.warn(`IndexedDB upgrade needed! [${event.oldVersion} to ${event.newVersion}]`)
 
         /** @type {IDBDatabase} */
         const db = event.target.result
@@ -196,61 +163,3 @@ class IndexedDBRepository {
         alert(msg)
     }
 }
-
-/**
- * @param {HTMLElement} element 
- * @param {function():Promise<void>} callback 
- */
-function safeOnClick(element, callback) {
-    element.onclick = () => {
-        element.disabled = true
-        callback()
-            .finally(() => element.disabled = false)
-    }
-}
-
-/**
- * @param {int} ms 
- * @returns {Promise<void>}
- */
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * @param {IndexedDBRepository} repository 
- */
-function setListeners(repository) {
-    safeOnClick(document.getElementById("add_item"), async () => {
-        const amount = prompt("Enter the amount of money:")
-        console.log(`Received: ${amount}`)
-    })
-    safeOnClick(document.getElementById("update_exchange_rates"), async () => {
-        try {
-            const coingeckoRepository = new CoingeckoRepository()
-            const rawRates = await coingeckoRepository.getExchangeRates()
-            const exchangeRates = await repository.updateExchangeRates(rawRates["rates"])
-            console.log("Echange rates have been updated:", exchangeRates)
-
-            const usdRubRate = await repository.getExchangeRate("usd", "rub")
-            console.log("usd/rub rate:", usdRubRate)
-        } catch (error) {
-            console.error("Unable to update echange rates", error)
-        }
-    })
-    safeOnClick(document.getElementById("delete_db"), async () => {
-        try {
-            await delay(1000)
-            await repository.deleteIndexedDB()
-            console.warn(`Database "${repository.dbName}" has been deleted!`)
-        } catch (error) {
-            console.error(`Unable to delete database "${repository.dbName}"`, error)
-        }
-    })
-}
-
-input().then(() => {
-    console.log("Completed.")
-}).catch(error => {
-    console.error("Unhandled top level error:", error)
-})

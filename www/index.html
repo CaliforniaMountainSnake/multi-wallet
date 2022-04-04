@@ -8,23 +8,53 @@
 <body>
     <h1>Finance App</h1>
 
-
     <div class="last_update">
         Date of the last exchange rates update:
         <span id="rates_last_update_date">18:20 27.03.2022</span>
         <button id="update_exchange_rates">🗘 Update</button>
     </div>
     <div>
-        <button id="delete_db">Delete DB</button>
+        <table border="1" id="data_table">
+            <thead>
+                <tr>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <td colspan="3">Total:</td>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>BTC</td>
+                    <td>
+                        <button id="delete_db">Delete DB</button>
+                    </td>
+                </tr>
+            </tfoot>
+            <tbody>
+                <tr>
+                    <td>
+                        <input type="number" id="amount" />
+                    </td>
+                    <td>
+                        <select id="type">
+                            <option>kek</option>
+                            <option>lol</option>
+                            <option>ok</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button id="add_new_amount">Add</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
-    <button id="add_item">Add item</button>
-    <br>
-
-    <label for="amount">Amount:</label>
-    <input type="number" id="amount" />
-
-    <script src="app.js"></script>
+    <script type="module" src="js/input.js"></script>
 </body>
 
 </html>
