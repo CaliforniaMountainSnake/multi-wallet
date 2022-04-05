@@ -19,6 +19,7 @@
                 <tr>
                     <th>Amount</th>
                     <th>Currency</th>
+                    <th>Comment</th>
                     <th>Action</th>
                 </tr>
                 <tr>
@@ -29,17 +30,20 @@
                         <select id="add_currency"></select>
                     </td>
                     <td>
+                        <input type="text" id="add_comment" />
+                    </td>
+                    <td>
                         <button id="add_button">Add</button>
                     </td>
                 </tr>
             </thead>
             <tfoot>
                 <tr>
-                    <td colspan="3">Total:</td>
+                    <td colspan="4">Total:</td>
                 </tr>
                 <tr>
-                    <td>0</td>
-                    <td colspan="2">
+                    <td id="total_sum">0</td>
+                    <td colspan="3">
                         <select id="total_currency"></select>
                     </td>
                 </tr>
@@ -52,7 +56,7 @@
 
     <div>
         <br>
-        <button id="delete_db">Delete DB</button>
+        <button id="delete_db">⚠ Delete DB</button>
     </div>
 
     <script type="module" src="js/input.js"></script>

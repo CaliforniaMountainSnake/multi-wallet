@@ -1,20 +1,75 @@
+import { BtcRate } from "./CoingeckoRepository.js"
+
 export class IndexedDBRepository {
     /** @type {IDBDatabase} */
     #db
     #dbName = "test"
     #dbVersion = 3
 
-    #books_store_name = "books"
-    #supported_vs_currencies_store_name = "supported_vs_currencies"
+    #configs_store_name = "configs"
     #exchange_rates_store_name = "exchange_rates"
+    #amounts_store_name = "amounts"
 
     get dbName() {
         return this.#dbName
     }
 
     /**
+     * @param {string} key 
+     * @returns {Promise<any>}
+     */
+    async getConfig(key) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#configs_store_name)
+            const value = await this.#promiseRequest(store.get(key))
+            if (value === undefined) {
+                throw new Error(`Wrong config key: "${key}"`)
+            }
+
+            return value["value"]
+        }, "readonly")
+    }
+
+    /**
+     * @param {string} key 
+     * @param {any} value 
+     * @returns {Promise<string>} Added row's key.
+     */
+    async setConfig(key, value) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#configs_store_name)
+            return await this.#promiseRequest(store.put({ "key": key, "value": value }))
+        })
+    }
+
+    /**
+    * @returns {Promise<Map<string, Amount>}
+    */
+    async getAmounts() {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#amounts_store_name)
+            return await this.#promiseCursorRequest(store.openCursor())
+        }, "readonly")
+    }
+
+    /**
+     * @param {number} amount 
+     * @param {string} currency 
+     * @param {string} comment 
+     * @returns {Promise<number>} Added row's key.
+     */
+    async addAmount(amount, currency, comment) {
+        const amountObj = new Amount(amount, currency, comment)
+
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#amounts_store_name)
+            return await this.#promiseRequest(store.add(amountObj))
+        })
+    }
+
+    /**
      * @param {string} symbol 
-     * @returns {Promise<object>}
+     * @returns {Promise<BtcRate>}
      */
     async getBtcToSymbolExchangeRate(symbol) {
         return await this.#transaction(async transaction => {
@@ -29,21 +84,6 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {string} symbol1 
-     * @param {string} symbol2 
-     * @returns {Promise<number>}
-     */
-    async getExchangeRate(symbol1, symbol2) {
-        return await this.#transaction(async transaction => {
-            const store = transaction.objectStore(this.#exchange_rates_store_name)
-            const cur1 = await this.#promiseRequest(store.get(symbol1))
-            const cur2 = await this.#promiseRequest(store.get(symbol2))
-
-            return (cur2["value"] / cur1["value"])
-        }, "readonly")
-    }
-
-    /**
     * @returns {Promise<string[]>}
     */
     async getSymbols() {
@@ -54,32 +94,27 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {object} data
-     * @returns {Promise<object[]>}
+     * @returns {Promise<Map<string, BtcRate>}
+     */
+    async getExchangeRates() {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(this.#exchange_rates_store_name)
+            return await this.#promiseCursorRequest(store.openCursor())
+        }, "readonly")
+    }
+
+    /**
+     * @param {Map<string, BtcRate>} data
+     * @returns {Promise<Map<string, BtcRate>>}
      */
     async updateExchangeRates(data) {
         return await this.#transaction(async transaction => {
             const store = transaction.objectStore(this.#exchange_rates_store_name)
-            for (const [key, value] of Object.entries(data)) {
+            for (const [key, value] of data.entries()) {
                 store.put(Object.assign({ "symbol": key }, value))
             }
 
-            return await this.#promiseRequest(store.getAll())
-        })
-    }
-
-    /**
-     * @param {string[]} currencies 
-     * @returns {Promise<string[]>}
-     */
-    async updateSupportedCurrencies(currencies) {
-        return await this.#transaction(async transaction => {
-            const store = transaction.objectStore(this.#supported_vs_currencies_store_name)
-            for (let symbol of currencies) {
-                store.put({ "symbol": symbol })
-            }
-
-            return currencies
+            return await this.#promiseCursorRequest(store.openCursor())
         })
     }
 
@@ -127,6 +162,28 @@ export class IndexedDBRepository {
     }
 
     /**
+     * @param {IDBRequest<IDBCursorWithValue>} request 
+     * @returns {Promise<Map<any, any>}
+     */
+    async #promiseCursorRequest(request) {
+        return new Promise((resolve, reject) => {
+            const values = new Map()
+            request.onerror = event => reject(event.target.error)
+            request.onsuccess = event => {
+                /** @type {IDBCursor} */
+                const cursor = event.target.result
+                if (cursor) {
+                    values.set(cursor.key, cursor.value)
+                    cursor.continue()
+                }
+                else {
+                    resolve(values)
+                }
+            }
+        })
+    }
+
+    /**
      * @param {function(IDBTransaction):Promise<any>} transactionBody 
      * @param {"readonly"|"readwrite"} mode
      * @returns {Promise<any>}
@@ -169,13 +226,13 @@ export class IndexedDBRepository {
 
         const migrations = {
             1: () => {
-                db.createObjectStore(this.#supported_vs_currencies_store_name, { keyPath: "symbol" })
+                db.createObjectStore(this.#configs_store_name, { keyPath: "key" })
             },
             2: () => {
                 db.createObjectStore(this.#exchange_rates_store_name, { keyPath: "symbol" })
             },
             3: () => {
-                // nothing
+                db.createObjectStore(this.#amounts_store_name, { autoIncrement: true })
             },
         }
 
@@ -188,5 +245,18 @@ export class IndexedDBRepository {
             migrations[i]()
             console.info(`Migration "${i}" has been applied.`)
         }
+    }
+}
+
+export class Amount {
+    /**
+     * @param {number} amount 
+     * @param {string} symbol 
+     * @param {string} comment 
+     */
+    constructor(amount, symbol, comment) {
+        this.amount = amount
+        this.symbol = symbol
+        this.comment = comment
     }
 }
