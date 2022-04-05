@@ -32,29 +32,31 @@ export class App {
         console.log("usd/rub rate:", this.#getExchangeRate("usd", "rub"))
 
         // Render the data table
-        await this.#renderDataTable()
+        await this.#renderApp()
     }
 
     async initConfigs() {
-        try {
-            await this.#dbRepository.getConfig(this.#conf_key_selected_total_currency)
-        } catch (error) {
-            await this.#dbRepository.setConfig(this.#conf_key_selected_total_currency, this.#default_total_currency)
-        }
-
+        await this.#dbRepository.initConfig(this.#conf_key_selected_total_currency, this.#default_total_currency)
+        await this.#dbRepository.initConfig(this.#conf_key_last_update_timestamp, 0)
         console.log("Configs have been initialized.")
     }
 
-    async #renderDataTable() {
-        // Promise.all()???
+    async #renderApp() {
         return Promise.all([
+            this.#renderLastUpdateTime(),
             this.#renderAddNewAmountRow(),
+            this.#renderDataTableHead(),
             this.#renderDataTableBody(),
-            this.#renderTotalSummary(),
+            this.#renderDataTableTotalSummary(),
         ])
     }
 
-    async #renderTotalSummary() {
+    async #renderLastUpdateTime() {
+        const timestamp = await this.#dbRepository.getConfig(this.#conf_key_last_update_timestamp)
+        document.getElementById("last_update_time").innerHTML = (new Date(timestamp)).toLocaleString()
+    }
+
+    async #renderDataTableTotalSummary() {
         // Get selected currency.
         const targetCurrency = await this.#dbRepository.getConfig(this.#conf_key_selected_total_currency)
         const targetUnit = this.#exchange_rates.get(targetCurrency).unit
@@ -71,7 +73,7 @@ export class App {
             resultSum += amount.amount / rate
         }
 
-        document.getElementById("total_sum").innerHTML = `${resultSum.toFixed(2)} ${targetUnit}`
+        document.getElementById("total_sum").innerHTML = `${this.#formatAmount(resultSum)} ${targetUnit}`
     }
 
     async #renderDataTableBody() {
@@ -90,7 +92,37 @@ export class App {
             tbody.appendChild(this.#createDataTableRow(id, amount, targetCurrency, targetUnit))
         }
 
+        // Set listeners for delete buttons.
+        document.querySelectorAll(".delete_button").forEach(button => {
+            this.#safeOnClick(button, async () => {
+                const id = Number.parseInt(button.dataset.id)
+                try {
+                    const amount = await this.#dbRepository.getAmount(id)
+                    if (confirm(this.#getAmountDeletionMsg(amount))) {
+                        await this.#dbRepository.deleteAmount(id)
+                        await this.#renderApp()
+                        console.log(`Amount row with key "${id}" has been deleted.`)
+                    }
+                } catch (error) {
+                    console.error(error)
+                    alert(error)
+                }
+            })
+        })
+
         console.log("Amounts:", amounts)
+    }
+
+    /**
+     * @param {Amount} amount 
+     * @returns {string}
+     */
+    #getAmountDeletionMsg(amount) {
+        const unit = this.#exchange_rates.get(amount.symbol).unit
+        let msg = `Are you sure you want to delete ${amount.amount} ${unit} `
+        msg += amount.comment === undefined ? "?" : `(${amount.comment}) ?`
+
+        return msg
     }
 
     /**
@@ -107,7 +139,8 @@ export class App {
         const name = this.#exchange_rates.get(amount.symbol).name
         const targetCurrencyAmount = amount.amount / this.#getExchangeRate(targetCurrency, amount.symbol)
 
-        tr.appendChild(this.#createTd(`${amount.amount} ${unit} / ${targetCurrencyAmount.toFixed(2)} ${targetUnit}`))
+        tr.appendChild(this.#createTd(`${amount.amount} ${unit}`))
+        tr.appendChild(this.#createTd(`${this.#formatAmount(targetCurrencyAmount)} ${targetUnit}`))
         tr.appendChild(this.#createTd(name, isEmptyComment ? 2 : 1))
         if (!isEmptyComment) {
             tr.appendChild(this.#createTd(amount.comment))
@@ -129,6 +162,32 @@ export class App {
         return td
     }
 
+    /**
+     * @param {number} amount 
+     * @returns {number}
+     */
+    #formatAmount(amount) {
+        const fractionDigits = 2
+        if (amount === 0) {
+            return amount
+        }
+        if (amount < 1) {
+            // @see https://stackoverflow.com/a/31002148
+            const countOfDecimalZeros = -Math.floor(Math.log10(amount) + 1)
+            return amount.toFixed(countOfDecimalZeros + fractionDigits * 2)
+        }
+
+        return amount.toFixed(fractionDigits)
+    }
+
+    async #renderDataTableHead() {
+        // Get selected currency.
+        const targetCurrency = await this.#dbRepository.getConfig(this.#conf_key_selected_total_currency)
+        const targetUnit = this.#exchange_rates.get(targetCurrency).unit
+
+        document.getElementById("amount_in_selected_currency").innerHTML = `Amount in ${targetUnit}`
+    }
+
     async #renderAddNewAmountRow() {
         await this.#renderCurrencySelect("add_currency")
 
@@ -140,8 +199,7 @@ export class App {
                 const currency = currencySelect.options[currencySelect.selectedIndex].value
 
                 await this.#addAmount(amount, currency, comment)
-                await this.#renderDataTableBody()
-                await this.#renderTotalSummary()
+                await this.#renderApp()
             } catch (error) {
                 console.warn(error)
                 alert(error)
@@ -218,10 +276,8 @@ export class App {
     #setListeners() {
         document.getElementById("total_currency").onchange = event => {
             this.#dbRepository.setConfig(this.#conf_key_selected_total_currency, event.target.value).then(key => {
-                console.log("Selected:", event.target.value)
-                return this.#renderTotalSummary()
-            }).then(() => {
-                return this.#renderDataTableBody()
+                console.log("Selected a new currency:", event.target.value)
+                return this.#renderApp()
             }).catch(error => {
                 console.error("Unable to calculate the total sum! Error:", error)
             })
@@ -230,21 +286,24 @@ export class App {
             try {
                 const rawRates = await this.#coingeckoRepository.getExchangeRates()
                 this.#exchange_rates = await this.#dbRepository.updateExchangeRates(rawRates)
+                await this.#dbRepository.setConfig(this.#conf_key_last_update_timestamp, Date.now())
 
-                await this.#renderDataTable()
-
+                await this.#renderApp()
                 console.log("Echange rates have been updated:", this.#exchange_rates)
             } catch (error) {
-                console.error("Unable to update echange rates", error)
+                const errMsg = `Unable to update echange rates: ${error}`
+                console.error(errMsg)
+                alert(errMsg)
             }
         })
         this.#safeOnClick(document.getElementById("delete_db"), async () => {
-            try {
-                await this.#delay(1000)
-                await this.#dbRepository.deleteIndexedDB()
-                console.warn(`Database "${this.#dbRepository.dbName}" has been deleted!`)
-            } catch (error) {
-                console.error(`Unable to delete database "${this.#dbRepository.dbName}"`, error)
+            if (confirm("Are you sure you want to delete the local DB?")) {
+                try {
+                    await this.#dbRepository.deleteIndexedDB()
+                    console.warn(`Database "${this.#dbRepository.dbName}" has been deleted!`)
+                } catch (error) {
+                    console.error(`Unable to delete database "${this.#dbRepository.dbName}"`, error)
+                }
             }
         })
     }

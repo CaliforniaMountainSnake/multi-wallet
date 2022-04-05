@@ -16,18 +16,25 @@ export class IndexedDBRepository {
 
     /**
      * @param {string} key 
-     * @returns {Promise<any>}
+     * @returns {Promise<any>} Config value.
      */
     async getConfig(key) {
-        return await this.#transaction(async transaction => {
-            const store = transaction.objectStore(this.#configs_store_name)
-            const value = await this.#promiseRequest(store.get(key))
-            if (value === undefined) {
-                throw new Error(`Wrong config key: "${key}"`)
-            }
+        return (await this.#getByKey(this.#configs_store_name, key))["value"]
+    }
 
-            return value["value"]
-        }, "readonly")
+    /**
+     * Set config if it is not set yet.
+     * 
+     * @param {string} key 
+     * @param {any} value 
+     * @returns {Promise<void>}
+     */
+    async initConfig(key, value) {
+        try {
+            await this.getConfig(key)
+        } catch (error) {
+            await this.setConfig(key, value)
+        }
     }
 
     /**
@@ -53,6 +60,14 @@ export class IndexedDBRepository {
     }
 
     /**
+     * @param {number} key 
+     * @returns {Promise<Amount>}
+     */
+    async getAmount(key) {
+        return await this.#getByKey(this.#amounts_store_name, key)
+    }
+
+    /**
      * @param {number} amount 
      * @param {string} currency 
      * @param {string} comment 
@@ -68,29 +83,19 @@ export class IndexedDBRepository {
     }
 
     /**
+     * @param {number} key 
+     * @returns {Promise<number>} Deleted row's key.
+     */
+    async deleteAmount(key) {
+        return await this.#deleteByKey(this.#amounts_store_name, key)
+    }
+
+    /**
      * @param {string} symbol 
      * @returns {Promise<BtcRate>}
      */
     async getBtcToSymbolExchangeRate(symbol) {
-        return await this.#transaction(async transaction => {
-            const store = transaction.objectStore(this.#exchange_rates_store_name)
-            const value = await this.#promiseRequest(store.get(symbol))
-            if (value === undefined) {
-                throw new Error(`Wrong symbol: "${symbol}"`)
-            }
-
-            return value
-        }, "readonly")
-    }
-
-    /**
-    * @returns {Promise<string[]>}
-    */
-    async getSymbols() {
-        return await this.#transaction(async transaction => {
-            const store = transaction.objectStore(this.#exchange_rates_store_name)
-            return await this.#promiseRequest(store.getAllKeys())
-        }, "readonly")
+        return await this.#getByKey(this.#exchange_rates_store_name, symbol)
     }
 
     /**
@@ -148,6 +153,43 @@ export class IndexedDBRepository {
             deleteRequest.onerror = event => reject(event.target.error)
             deleteRequest.onsuccess = event => resolve()
         })
+    }
+
+    /**
+     * Delete a row.
+     * Be sure to convert the key to a number when the DB key has a number type.
+     * 
+     * Warning! The delete methods always return to success event handler with undefined as result
+     * whether given key was deleted or not.
+     * 
+     * @param {string} storeName 
+     * @param {any} key 
+     * @returns {Promise<any>}
+     * 
+     * @see https://stackoverflow.com/a/14330794
+     */
+    async #deleteByKey(storeName, key) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(storeName)
+            return await this.#promiseRequest(store.delete(key))
+        })
+    }
+
+    /**
+     * @param {string} storeName 
+     * @param {any} key 
+     * @returns {Promise<any>} Rejected promise if there is no row with the given key.
+     */
+    async #getByKey(storeName, key) {
+        return await this.#transaction(async transaction => {
+            const store = transaction.objectStore(storeName)
+            const value = await this.#promiseRequest(store.get(key))
+            if (value === undefined) {
+                throw new Error(`Unable to find a row with key: "${key}"`)
+            }
+
+            return value
+        }, "readonly")
     }
 
     /**

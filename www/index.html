@@ -8,9 +8,9 @@
 <body>
     <h1>Finance App</h1>
 
-    <div class="last_update">
+    <div>
         Date of the last exchange rates update:
-        <span id="rates_last_update_date">18:20 27.03.2022</span>
+        <span id="last_update_time">18:20 27.03.2022</span>
         <button id="update_exchange_rates">🗘 Update</button>
     </div>
     <div>
@@ -18,13 +18,14 @@
             <thead>
                 <tr>
                     <th>Amount</th>
+                    <th id="amount_in_selected_currency">Amount in VS</th>
                     <th>Currency</th>
                     <th>Comment</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
                 <tr>
-                    <td>
-                        <input type="number" id="add_amount" />
+                    <td colspan="2">
+                        <input type="number" id="add_amount" placeholder="Enter amount" />
                     </td>
                     <td>
                         <select id="add_currency"></select>
@@ -39,9 +40,10 @@
             </thead>
             <tfoot>
                 <tr>
-                    <td colspan="4">Total:</td>
+                    <th colspan="5">Total:</th>
                 </tr>
                 <tr>
+                    <td></td>
                     <td id="total_sum">0</td>
                     <td colspan="3">
                         <select id="total_currency"></select>
