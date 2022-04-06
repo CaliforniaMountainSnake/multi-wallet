@@ -3,7 +3,7 @@ import { BtcRate } from "./CoingeckoRepository.js"
 export class IndexedDBRepository {
     /** @type {IDBDatabase} */
     #db
-    #dbName = "test"
+    #dbName = "multi-wallet-app"
     #dbVersion = 3
 
     #configs_store_name = "configs"
@@ -27,13 +27,15 @@ export class IndexedDBRepository {
      * 
      * @param {string} key 
      * @param {any} value 
-     * @returns {Promise<void>}
+     * @returns {Promise<boolean>}
      */
     async initConfig(key, value) {
         try {
             await this.getConfig(key)
+            return true
         } catch (error) {
             await this.setConfig(key, value)
+            return false
         }
     }
 
@@ -135,6 +137,7 @@ export class IndexedDBRepository {
             openRequest.onsuccess = () => {
                 this.#db = openRequest.result
                 resolve()
+                console.log(`IndexedDB "${this.#dbName}" has been opened.`)
             }
         })
     }

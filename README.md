@@ -5,7 +5,7 @@ With this app you can add all your amounts of money in different currencies into
 
 Exchange rates are updated using the `Coingecko` API.
 
-Try the live demo here: https://californiamountainsnake.github.io/multi-wallet/www
+**Try the live demo here:** [https://californiamountainsnake.github.io/multi-wallet/www](https://californiamountainsnake.github.io/multi-wallet/www)
 
 ## Stack:
 - Pure HTML for web interface

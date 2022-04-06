@@ -19,17 +19,10 @@ export class App {
 
     async start() {
         await this.#dbRepository.open()
-        console.log(`IndexedDB "${this.#dbRepository.dbName}" has been opened.`)
-
         await this.initConfigs()
-
-        // Set listeners.
-        this.#setListeners()
 
         // Load local exchange rates.
         this.#exchange_rates = await this.#dbRepository.getExchangeRates()
-        console.log("Exchange rates:", this.#exchange_rates)
-        console.log("usd/rub rate:", this.#getExchangeRate("usd", "rub"))
 
         // Render the data table
         await this.#renderApp()
@@ -37,7 +30,12 @@ export class App {
 
     async initConfigs() {
         await this.#dbRepository.initConfig(this.#conf_key_selected_total_currency, this.#default_total_currency)
-        await this.#dbRepository.initConfig(this.#conf_key_last_update_timestamp, 0)
+        try {
+            await this.#dbRepository.getConfig(this.#conf_key_last_update_timestamp)
+        } catch (error) {
+            await this.#updateExchangeRates()
+        }
+
         console.log("Configs have been initialized.")
     }
 
@@ -48,32 +46,81 @@ export class App {
             this.#renderDataTableHead(),
             this.#renderDataTableBody(),
             this.#renderDataTableTotalSummary(),
+            this.#renderDbDeletionButton(),
         ])
+    }
+
+    async #renderDbDeletionButton() {
+        document.getElementById("delete_db").onclick = event => {
+            this.#disableElementWhileCallback(event.target, async () => {
+                if (confirm("Are you sure you want to delete the local DB?")) {
+                    await this.#dbRepository.deleteIndexedDB()
+                    console.warn(`Database "${this.#dbRepository.dbName}" has been deleted!`)
+
+                    await this.start()
+                }
+            }).catch(error => {
+                console.error(`Unable to delete database "${this.#dbRepository.dbName}"`, error)
+            })
+        }
     }
 
     async #renderLastUpdateTime() {
         const timestamp = await this.#dbRepository.getConfig(this.#conf_key_last_update_timestamp)
         document.getElementById("last_update_time").innerHTML = (new Date(timestamp)).toLocaleString()
+
+        document.getElementById("update_exchange_rates").onclick = event => this.#updateExchangeRates()
+    }
+
+    async #updateExchangeRates() {
+        try {
+            await this.#disableElementWhileCallback(document.getElementById("update_exchange_rates"), async () => {
+                const rates = await this.#coingeckoRepository.getExchangeRates()
+                this.#exchange_rates = await this.#dbRepository.updateExchangeRates(rates)
+                await this.#dbRepository.setConfig(this.#conf_key_last_update_timestamp, Date.now())
+
+                await this.#renderApp()
+                console.log("Exchange rates have been updated:", this.#exchange_rates)
+            })
+        } catch (error) {
+            this.#showMessage(`Unable to update exchange rates: ${error}`, console.error)
+        }
     }
 
     async #renderDataTableTotalSummary() {
         // Get selected currency.
-        const targetCurrency = await this.#dbRepository.getConfig(this.#conf_key_selected_total_currency)
-        const targetUnit = this.#exchange_rates.get(targetCurrency).unit
+        const [selectedSymbol, selectedRate] = await this.#getSelectedCurrencyInfo()
 
         // Render total currency select elem.
-        await this.#renderCurrencySelect("total_currency")
-        document.getElementById("total_currency").value = targetCurrency
+        this.#renderCurrencySelect(document.getElementById("total_currency")).value = selectedSymbol
 
-        // Calculate the result sum.
+        // Calculate total sum.
+        const totalSum = await this.#calculateTotalSum(selectedSymbol)
+        document.getElementById("total_sum").innerHTML = `${this.#formatAmount(totalSum)} ${selectedRate.unit}`
+
+        // Set select's listener.
+        document.getElementById("total_currency").onchange = event => {
+            this.#dbRepository.setConfig(this.#conf_key_selected_total_currency, event.target.value).then(() => {
+                console.log("Selected a new currency:", event.target.value)
+                return this.#renderApp()
+            }).catch(error => {
+                console.error("Unable to calculate total sum! Error:", error)
+            })
+        }
+    }
+
+    /**
+     * @param {string} targetCurrency
+     * @returns {Promise<number>}
+     */
+    async #calculateTotalSum(targetCurrency) {
         const amounts = await this.#dbRepository.getAmounts()
         let resultSum = 0
         for (const [id, amount] of amounts.entries()) {
             const rate = this.#getExchangeRate(targetCurrency, amount.symbol)
             resultSum += amount.amount / rate
         }
-
-        document.getElementById("total_sum").innerHTML = `${this.#formatAmount(resultSum)} ${targetUnit}`
+        return resultSum
     }
 
     async #renderDataTableBody() {
@@ -83,34 +130,37 @@ export class App {
         oldTbody.parentNode.replaceChild(tbody, oldTbody)
 
         // Get selected currency.
-        const targetCurrency = await this.#dbRepository.getConfig(this.#conf_key_selected_total_currency)
-        const targetUnit = this.#exchange_rates.get(targetCurrency).unit
+        const [selectedSymbol, selectedRate] = await this.#getSelectedCurrencyInfo()
 
         // Add new rows.
         const amounts = await this.#dbRepository.getAmounts()
         for (const [id, amount] of amounts.entries()) {
-            tbody.appendChild(this.#createDataTableRow(id, amount, targetCurrency, targetUnit))
+            tbody.appendChild(this.#createDataTableRow(id, amount, selectedSymbol, selectedRate.unit))
         }
 
         // Set listeners for delete buttons.
         document.querySelectorAll(".delete_button").forEach(button => {
-            this.#safeOnClick(button, async () => {
-                const id = Number.parseInt(button.dataset.id)
-                try {
+            button.onclick = () => {
+                this.#disableElementWhileCallback(button, async () => {
+                    const id = Number.parseInt(button.dataset.id)
                     const amount = await this.#dbRepository.getAmount(id)
                     if (confirm(this.#getAmountDeletionMsg(amount))) {
                         await this.#dbRepository.deleteAmount(id)
                         await this.#renderApp()
-                        console.log(`Amount row with key "${id}" has been deleted.`)
                     }
-                } catch (error) {
-                    console.error(error)
-                    alert(error)
-                }
-            })
+                }).catch(error => this.#showMessage(error, console.error))
+            }
         })
+    }
 
-        console.log("Amounts:", amounts)
+    /**
+     * @returns {Promise<[string, BtcRate]>}
+     */
+    async #getSelectedCurrencyInfo() {
+        const symbol = await this.#dbRepository.getConfig(this.#conf_key_selected_total_currency)
+        const rate = this.#exchange_rates.get(symbol)
+
+        return [symbol, rate]
     }
 
     /**
@@ -182,29 +232,24 @@ export class App {
 
     async #renderDataTableHead() {
         // Get selected currency.
-        const targetCurrency = await this.#dbRepository.getConfig(this.#conf_key_selected_total_currency)
-        const targetUnit = this.#exchange_rates.get(targetCurrency).unit
+        const [selectedSymbol, selectedRate] = await this.#getSelectedCurrencyInfo()
 
-        document.getElementById("amount_in_selected_currency").innerHTML = `Amount in ${targetUnit}`
+        document.getElementById("amount_in_selected_currency").innerHTML = `Amount in ${selectedRate.unit}`
     }
 
     async #renderAddNewAmountRow() {
-        await this.#renderCurrencySelect("add_currency")
+        this.#renderCurrencySelect(document.getElementById("add_currency"))
 
-        this.#safeOnClick(document.getElementById("add_button"), async () => {
-            try {
+        document.getElementById("add_button").onclick = event => {
+            this.#disableElementWhileCallback(event.target, async () => {
                 const amount = document.getElementById("add_amount").value
                 const comment = document.getElementById("add_comment").value
-                const currencySelect = document.getElementById("add_currency")
-                const currency = currencySelect.options[currencySelect.selectedIndex].value
+                const currency = document.getElementById("add_currency").value
 
                 await this.#addAmount(amount, currency, comment)
                 await this.#renderApp()
-            } catch (error) {
-                console.warn(error)
-                alert(error)
-            }
-        })
+            }).catch(error => this.#showMessage(error, console.warn))
+        }
     }
 
     /**
@@ -240,13 +285,13 @@ export class App {
     }
 
     /**
-     * @param {string} selectId 
+     * @param {HTMLSelectElement} selectElement
+     * @returns {HTMLSelectElement}
      */
-    async #renderCurrencySelect(selectId) {
+    #renderCurrencySelect(selectElement) {
         // Remove existed options.
-        const currencySelect = document.getElementById(selectId)
-        while (currencySelect.options.length > 0) {
-            currencySelect.remove(0)
+        while (selectElement.options.length > 0) {
+            selectElement.remove(0)
         }
 
         // Add new options.
@@ -254,8 +299,10 @@ export class App {
             const opt = document.createElement("option")
             opt.value = symbol
             opt.innerHTML = `${symbol} - ${rate.name}`
-            currencySelect.appendChild(opt)
+            selectElement.appendChild(opt)
         }
+
+        return selectElement
     }
 
     /**
@@ -273,54 +320,27 @@ export class App {
         return (cur2["value"] / cur1["value"])
     }
 
-    #setListeners() {
-        document.getElementById("total_currency").onchange = event => {
-            this.#dbRepository.setConfig(this.#conf_key_selected_total_currency, event.target.value).then(key => {
-                console.log("Selected a new currency:", event.target.value)
-                return this.#renderApp()
-            }).catch(error => {
-                console.error("Unable to calculate the total sum! Error:", error)
-            })
+    /**
+     * @param {HTMLElement} element 
+     * @param {function(HTMLElement):Promise<any>} callback 
+     * @returns {Promise<any>}
+     */
+    async #disableElementWhileCallback(element, callback) {
+        element.disabled = true
+        try {
+            return await callback(element)
+        } finally {
+            element.disabled = false
         }
-        this.#safeOnClick(document.getElementById("update_exchange_rates"), async () => {
-            try {
-                const rawRates = await this.#coingeckoRepository.getExchangeRates()
-                this.#exchange_rates = await this.#dbRepository.updateExchangeRates(rawRates)
-                await this.#dbRepository.setConfig(this.#conf_key_last_update_timestamp, Date.now())
-
-                await this.#renderApp()
-                console.log("Echange rates have been updated:", this.#exchange_rates)
-            } catch (error) {
-                const errMsg = `Unable to update echange rates: ${error}`
-                console.error(errMsg)
-                alert(errMsg)
-            }
-        })
-        this.#safeOnClick(document.getElementById("delete_db"), async () => {
-            if (confirm("Are you sure you want to delete the local DB?")) {
-                try {
-                    await this.#dbRepository.deleteIndexedDB()
-                    console.warn(`Database "${this.#dbRepository.dbName}" has been deleted!`)
-                } catch (error) {
-                    console.error(`Unable to delete database "${this.#dbRepository.dbName}"`, error)
-                }
-            }
-        })
     }
 
     /**
-     * @param {HTMLElement} element 
-     * @param {function():Promise<void>} callback 
+     * @param {any} error
+     * @param {function(any):void} logger
      */
-    #safeOnClick(element, callback) {
-        element.onclick = () => {
-            element.disabled = true
-            callback()
-                .catch(error => {
-                    console.error(`Uncaught error in the "onclick" callback:`, error)
-                })
-                .finally(() => element.disabled = false)
-        }
+    #showMessage(error, logger = console.log) {
+        logger(error)
+        alert(error)
     }
 
     /**
