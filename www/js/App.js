@@ -42,7 +42,7 @@ export class App {
     async #renderApp() {
         return Promise.all([
             this.#renderLastUpdateTime(),
-            this.#renderAddNewAmountRow(),
+            this.#renderAddNewAmountBlock(),
             this.#renderDataTableHead(),
             this.#renderDataTableBody(),
             this.#renderDataTableTotalSummary(),
@@ -183,18 +183,13 @@ export class App {
      * @returns {HTMLTableRowElement}
      */
     #createDataTableRow(id, amount, targetCurrency, targetUnit) {
-        const isEmptyComment = amount.comment === undefined
-        const tr = document.createElement("tr")
-        const unit = this.#exchange_rates.get(amount.symbol).unit
-        const name = this.#exchange_rates.get(amount.symbol).name
-        const targetCurrencyAmount = amount.amount / this.#getExchangeRate(targetCurrency, amount.symbol)
+        const rate = this.#exchange_rates.get(amount.symbol)
+        const selectedCurrencyAmount = amount.amount / this.#getExchangeRate(targetCurrency, amount.symbol)
 
-        tr.appendChild(this.#createTd(`${amount.amount} ${unit}`))
-        tr.appendChild(this.#createTd(`${this.#formatAmount(targetCurrencyAmount)} ${targetUnit}`))
-        tr.appendChild(this.#createTd(name, isEmptyComment ? 2 : 1))
-        if (!isEmptyComment) {
-            tr.appendChild(this.#createTd(amount.comment))
-        }
+        const tr = document.createElement("tr")
+        tr.appendChild(this.#createTd(`${amount.amount} ${rate.unit}`, 1, rate.name))
+        tr.appendChild(this.#createTd(`${this.#formatAmount(selectedCurrencyAmount)} ${targetUnit}`))
+        tr.appendChild(this.#createTd(amount.comment === undefined ? "" : amount.comment))
         tr.appendChild(this.#createTd(`<button class="delete_button" data-id="${id}">Delete</button>`))
 
         return tr
@@ -203,12 +198,17 @@ export class App {
     /**
      * @param {string} data 
      * @param {number} colspan
+     * @param {string} title
      * @returns {HTMLTableCellElement}
      */
-    #createTd(data, colspan = 1) {
+    #createTd(data, colspan = 1, title = undefined) {
         const td = document.createElement("td")
         td.colSpan = colspan
         td.innerHTML = data
+        if (title !== undefined) {
+            td.title = title
+        }
+
         return td
     }
 
@@ -237,8 +237,9 @@ export class App {
         document.getElementById("amount_in_selected_currency").innerHTML = `Amount in ${selectedRate.unit}`
     }
 
-    async #renderAddNewAmountRow() {
+    async #renderAddNewAmountBlock() {
         this.#renderCurrencySelect(document.getElementById("add_currency"))
+        document.getElementById("add_amount").value = ""
 
         document.getElementById("add_button").onclick = event => {
             this.#disableElementWhileCallback(event.target, async () => {
