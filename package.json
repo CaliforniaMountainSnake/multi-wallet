@@ -1,0 +1,35 @@
+{
+    "name": "finance-app",
+    "version": "1.0.0",
+    "description": "Let's say you have money in multiple currencies: US dollars, euro, rubbles, bitcoin, etc. And you want to know, how much money do you have in total? Given that exchange rates are constantly changing... With this app you can add all your amounts of money in different currencies into the single table and see how much money you have in total. The total result can be presented in any currency you want.",
+    "private": true,
+    "scripts": {
+        "build": "webpack",
+        "update_browserslist": "npx browserslist@latest --update-db",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git@github_CaliforniaMountainSnake:CaliforniaMountainSnake/multi-wallet.git"
+    },
+    "browserslist": [
+        "defaults"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "core-js": "^3.21.1",
+        "lodash": "^4.17.21",
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.17.9",
+        "@babel/preset-env": "^7.16.11",
+        "@babel/preset-react": "^7.16.7",
+        "babel-loader": "^8.2.4",
+        "html-webpack-plugin": "^5.5.0",
+        "webpack": "^5.72.0",
+        "webpack-cli": "^4.9.2"
+    }
+}

@@ -1,5 +1,6 @@
-import { BtcRate } from "./CoingeckoRepository.js"
+import {BtcRate} from "./CoingeckoRepository.js"
 
+// @ts-check
 export class IndexedDBRepository {
     /** @type {IDBDatabase} */
     #db
@@ -15,7 +16,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {string} key 
+     * @param {string} key
      * @returns {Promise<any>} Config value.
      */
     async getConfig(key) {
@@ -24,9 +25,9 @@ export class IndexedDBRepository {
 
     /**
      * Set config if it is not set yet.
-     * 
-     * @param {string} key 
-     * @param {any} value 
+     *
+     * @param {string} key
+     * @param {any} value
      * @returns {Promise<boolean>}
      */
     async initConfig(key, value) {
@@ -40,20 +41,20 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {string} key 
-     * @param {any} value 
+     * @param {string} key
+     * @param {any} value
      * @returns {Promise<string>} Added row's key.
      */
     async setConfig(key, value) {
         return await this.#transaction(async transaction => {
             const store = transaction.objectStore(this.#configs_store_name)
-            return await this.#promiseRequest(store.put({ "key": key, "value": value }))
+            return await this.#promiseRequest(store.put({"key": key, "value": value}))
         })
     }
 
     /**
-    * @returns {Promise<Map<string, Amount>}
-    */
+     * @returns {Promise<Map<string, Amount>>}
+     */
     async getAmounts() {
         return await this.#transaction(async transaction => {
             const store = transaction.objectStore(this.#amounts_store_name)
@@ -62,7 +63,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {number} key 
+     * @param {number} key
      * @returns {Promise<Amount>}
      */
     async getAmount(key) {
@@ -70,9 +71,9 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {number} amount 
-     * @param {string} currency 
-     * @param {string} comment 
+     * @param {number} amount
+     * @param {string} currency
+     * @param {string} comment
      * @returns {Promise<number>} Added row's key.
      */
     async addAmount(amount, currency, comment) {
@@ -85,7 +86,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {number} key 
+     * @param {number} key
      * @returns {Promise<number>} Deleted row's key.
      */
     async deleteAmount(key) {
@@ -93,7 +94,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {string} symbol 
+     * @param {string} symbol
      * @returns {Promise<BtcRate>}
      */
     async getBtcToSymbolExchangeRate(symbol) {
@@ -101,7 +102,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @returns {Promise<Map<string, BtcRate>}
+     * @returns {Promise<Map<string, BtcRate>>}
      */
     async getExchangeRates() {
         return await this.#transaction(async transaction => {
@@ -118,7 +119,7 @@ export class IndexedDBRepository {
         return await this.#transaction(async transaction => {
             const store = transaction.objectStore(this.#exchange_rates_store_name)
             for (const [key, value] of data.entries()) {
-                store.put(Object.assign({ "symbol": key }, value))
+                store.put(Object.assign({"symbol": key}, value))
             }
 
             return await this.#promiseCursorRequest(store.openCursor())
@@ -161,14 +162,14 @@ export class IndexedDBRepository {
     /**
      * Delete a row.
      * Be sure to convert the key to a number when the DB key has a number type.
-     * 
+     *
      * Warning! The delete methods always return to success event handler with undefined as result
      * whether given key was deleted or not.
-     * 
-     * @param {string} storeName 
-     * @param {any} key 
+     *
+     * @param {string} storeName
+     * @param {any} key
      * @returns {Promise<any>}
-     * 
+     *
      * @see https://stackoverflow.com/a/14330794
      */
     async #deleteByKey(storeName, key) {
@@ -179,8 +180,8 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {string} storeName 
-     * @param {any} key 
+     * @param {string} storeName
+     * @param {any} key
      * @returns {Promise<any>} Rejected promise if there is no row with the given key.
      */
     async #getByKey(storeName, key) {
@@ -196,7 +197,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {IDBRequest} request 
+     * @param {IDBRequest} request
      * @returns {Promise<any>}
      */
     async #promiseRequest(request) {
@@ -207,8 +208,8 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {IDBRequest<IDBCursorWithValue>} request 
-     * @returns {Promise<Map<any, any>}
+     * @param {IDBRequest<IDBCursorWithValue>} request
+     * @returns {Promise<Map<any, any>>}
      */
     async #promiseCursorRequest(request) {
         return new Promise((resolve, reject) => {
@@ -220,8 +221,7 @@ export class IndexedDBRepository {
                 if (cursor) {
                     values.set(cursor.key, cursor.value)
                     cursor.continue()
-                }
-                else {
+                } else {
                     resolve(values)
                 }
             }
@@ -229,7 +229,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {function(IDBTransaction):Promise<any>} transactionBody 
+     * @param {function(IDBTransaction):Promise<any>} transactionBody
      * @param {"readonly"|"readwrite"} mode
      * @returns {Promise<any>}
      */
@@ -248,7 +248,7 @@ export class IndexedDBRepository {
     }
 
     /**
-     * @param {IDBVersionChangeEvent} event 
+     * @param {IDBVersionChangeEvent} event
      */
     #onBlocked(event) {
         // There is another connection to the DB.
@@ -271,13 +271,13 @@ export class IndexedDBRepository {
 
         const migrations = {
             1: () => {
-                db.createObjectStore(this.#configs_store_name, { keyPath: "key" })
+                db.createObjectStore(this.#configs_store_name, {keyPath: "key"})
             },
             2: () => {
-                db.createObjectStore(this.#exchange_rates_store_name, { keyPath: "symbol" })
+                db.createObjectStore(this.#exchange_rates_store_name, {keyPath: "symbol"})
             },
             3: () => {
-                db.createObjectStore(this.#amounts_store_name, { autoIncrement: true })
+                db.createObjectStore(this.#amounts_store_name, {autoIncrement: true})
             },
         }
 
@@ -295,9 +295,9 @@ export class IndexedDBRepository {
 
 export class Amount {
     /**
-     * @param {number} amount 
-     * @param {string} symbol 
-     * @param {string} comment 
+     * @param {number} amount
+     * @param {string} symbol
+     * @param {string} comment
      */
     constructor(amount, symbol, comment) {
         this.amount = amount

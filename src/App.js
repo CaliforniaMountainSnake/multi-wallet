@@ -1,6 +1,7 @@
-import { Amount, IndexedDBRepository } from "./IndexedDBRepository.js"
-import { CoingeckoRepository, BtcRate } from "./CoingeckoRepository.js"
+import {Amount, IndexedDBRepository} from "./IndexedDBRepository.js"
+import {CoingeckoRepository, BtcRate} from "./CoingeckoRepository.js"
 
+// @ts-check
 export class App {
     #dbRepository
     #coingeckoRepository
@@ -98,7 +99,7 @@ export class App {
         const totalSum = await this.#calculateTotalSum(selectedSymbol)
         document.getElementById("total_sum").innerHTML = `${this.#formatAmount(totalSum)} ${selectedRate.unit}`
 
-        // Set select's listener.
+        // Set listener for select.
         document.getElementById("total_currency").onchange = event => {
             this.#dbRepository.setConfig(this.#conf_key_selected_total_currency, event.target.value).then(() => {
                 console.log("Selected a new currency:", event.target.value)
@@ -164,7 +165,7 @@ export class App {
     }
 
     /**
-     * @param {Amount} amount 
+     * @param {Amount} amount
      * @returns {string}
      */
     #getAmountDeletionMsg(amount) {
@@ -176,8 +177,8 @@ export class App {
     }
 
     /**
-     * @param {number} id 
-     * @param {Amount} amount 
+     * @param {number} id
+     * @param {Amount} amount
      * @param {string} targetCurrency
      * @param {string} targetUnit
      * @returns {HTMLTableRowElement}
@@ -196,7 +197,7 @@ export class App {
     }
 
     /**
-     * @param {string} data 
+     * @param {string} data
      * @param {number} colspan
      * @param {string} title
      * @returns {HTMLTableCellElement}
@@ -213,13 +214,13 @@ export class App {
     }
 
     /**
-     * @param {number} amount 
-     * @returns {number}
+     * @param {number} amount
+     * @returns {string}
      */
     #formatAmount(amount) {
         const fractionDigits = 2
         if (amount === 0) {
-            return amount
+            return amount.toString()
         }
         if (amount < 1) {
             // @see https://stackoverflow.com/a/31002148
@@ -254,7 +255,7 @@ export class App {
     }
 
     /**
-     * @param {any} amount 
+     * @param {any} amount
      * @param {string} currency
      * @param {string} comment
      */
@@ -262,7 +263,7 @@ export class App {
         // Validate given data.
         const amountValidator = amount => {
             const amountFloat = parseFloat(amount)
-            if (Number.isNaN(amountFloat) || amountFloat == 0) {
+            if (Number.isNaN(amountFloat) || amountFloat === 0) {
                 throw new Error("Please, enter a valid number!")
             }
             return amountFloat
@@ -307,8 +308,8 @@ export class App {
     }
 
     /**
-     * @param {string} symbol1 
-     * @param {string} symbol2 
+     * @param {string} symbol1
+     * @param {string} symbol2
      * @returns {number}
      */
     #getExchangeRate(symbol1, symbol2) {
@@ -322,8 +323,8 @@ export class App {
     }
 
     /**
-     * @param {HTMLElement} element 
-     * @param {function(HTMLElement):Promise<any>} callback 
+     * @param {HTMLElement} element
+     * @param {function(HTMLElement):Promise<any>} callback
      * @returns {Promise<any>}
      */
     async #disableElementWhileCallback(element, callback) {
@@ -345,7 +346,7 @@ export class App {
     }
 
     /**
-     * @param {int} ms 
+     * @param {int} ms
      * @returns {Promise<void>}
      */
     #delay(ms) {

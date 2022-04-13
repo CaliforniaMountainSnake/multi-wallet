@@ -1,5 +1,6 @@
 import { App } from "./App.js"
 
+// @ts-check
 // This is the input point of the app.
 // Start app.
 (new App()).start().then(() => {

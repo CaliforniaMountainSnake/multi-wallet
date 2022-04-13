@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Multi-currency Wallet</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+<main id="root">
+    <h1>Multi-currency Wallet</h1>
+    <div>
+        Date of the last exchange rates update:
+        <span id="last_update_time">Please, wait...</span>
+        <div>
+            <button id="update_exchange_rates">🗘 Update exchange rates</button>
+        </div>
+    </div>
+    <div>
+        <h2>Add a new row</h2>
+        <form>
+            <table>
+                <tr>
+                    <td><label for="add_amount">Amount:</label></td>
+                    <td><input type="number" id="add_amount" placeholder="Enter amount"/></td>
+                </tr>
+                <tr>
+                    <td><label for="add_currency">Currency:</label></td>
+                    <td><select id="add_currency"></select></td>
+                </tr>
+                <tr>
+                    <td><label for="add_comment">Comment:</label></td>
+                    <td><input type="text" id="add_comment"/></td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <button id="add_button">Add</button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <div>
+        <h2>Your wallet</h2>
+        <table border="1" id="data_table">
+            <thead>
+            <tr>
+                <th>Amount</th>
+                <th id="amount_in_selected_currency">Amount in VS</th>
+                <th>Comment</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tfoot>
+            <tr>
+                <th colspan="5">Total:</th>
+            </tr>
+            <tr>
+                <td></td>
+                <td id="total_sum">0</td>
+                <td colspan="2">
+                    <select id="total_currency"></select>
+                </td>
+            </tr>
+            </tfoot>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div>
+        <br>
+        <button id="delete_db">⚠ Clear DB</button>
+    </div>
+</main>
+
+<script type="module" src="old-index.js"></script>
+</body>
+</html>

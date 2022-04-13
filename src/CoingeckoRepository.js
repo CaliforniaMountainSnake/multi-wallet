@@ -1,3 +1,4 @@
+// @ts-check
 export class CoingeckoRepository {
     #apiDomain = "https://api.coingecko.com/api/v3"
 
@@ -17,8 +18,8 @@ export class CoingeckoRepository {
     }
 
     async #request(url) {
-        const response = await fetch(this.#apiDomain + url, { headers: { "Accept": "application/json" } })
-        if (response.status != 200) {
+        const response = await fetch(this.#apiDomain + url, {headers: {"Accept": "application/json"}})
+        if (response.status !== 200) {
             throw new Error(`Wrong API response code (${response.status})`)
         }
         return await response.json()
@@ -27,10 +28,10 @@ export class CoingeckoRepository {
 
 export class BtcRate {
     /**
-     * @param {string} name 
-     * @param {string} unit 
-     * @param {number} value 
-     * @param {string} type 
+     * @param {string} name
+     * @param {string} unit
+     * @param {number} value
+     * @param {string} type
      */
     constructor(name, unit, value, type) {
         this.name = name
