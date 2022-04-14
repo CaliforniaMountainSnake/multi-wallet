@@ -1,7 +1,7 @@
 import React from "react";
 import {createRoot} from "react-dom/client";
-import {AppComponent} from "./AppComponent";
-import {TopLevelErrorBoundary} from "./TopLevelErrorBoundary";
+import {AppComponent} from "./components/AppComponent";
+import {TopLevelErrorBoundary} from "./components/TopLevelErrorBoundary";
 
 const container = document.createElement("main");
 document.body.append(container);

@@ -1,5 +1,5 @@
-import {Amount, IndexedDBRepository} from "./IndexedDBRepository.js"
-import {CoingeckoRepository, BtcRate} from "./CoingeckoRepository.js"
+import {Amount, WalletRepository} from "./repositories/WalletRepository.js"
+import {CoingeckoRepository, BtcRate} from "./repositories/CoingeckoRepository.js"
 
 // @ts-check
 export class App {
@@ -14,7 +14,7 @@ export class App {
     #exchange_rates = new Map()
 
     constructor() {
-        this.#dbRepository = new IndexedDBRepository()
+        this.#dbRepository = new WalletRepository()
         this.#coingeckoRepository = new CoingeckoRepository()
     }
 
