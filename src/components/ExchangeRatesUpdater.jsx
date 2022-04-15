@@ -7,7 +7,7 @@ import {showError} from "../helpers";
 /**
  * Use a "controlled component" pattern. Set onChange() and onSubmit().
  */
-export class UpdateExchangeRates extends React.Component {
+export class ExchangeRatesUpdater extends React.Component {
     #coingeckoRepository = new CoingeckoRepository();
 
     constructor(props) {
@@ -19,14 +19,15 @@ export class UpdateExchangeRates extends React.Component {
     }
 
     /**
-     * @param e {MouseEvent}
+     * @param event {MouseEvent}
      * @TODO: Race condition: a button can be pressed multiple times while state is updating.
      */
-    handleClick = e => {
+    #handleClick = event => {
         this.setState({inProgress: true});
-        this.updateRates().then(rates => {
+        this.#updateRates().then(rates => {
             console.log("Exchange rates have been updated:", rates);
-            this.syncLastUpdateTimestamp();
+            this.props.onChange();
+            this.#syncLastUpdateTimestamp();
         }).catch(error => {
             showError(`Unable to update exchange rates: ${error}`);
         }).finally(() => {
@@ -34,7 +35,7 @@ export class UpdateExchangeRates extends React.Component {
         });
     };
 
-    syncLastUpdateTimestamp() {
+    #syncLastUpdateTimestamp() {
         this.props.dbRepository.getExchangeRatesLastUpdateTimestamp().then(timestamp => {
             this.setState({ratesLastUpdateTimestamp: timestamp});
         });
@@ -43,7 +44,7 @@ export class UpdateExchangeRates extends React.Component {
     /**
      * @returns {Promise<Map<string, BtcRate>>}
      */
-    async updateRates() {
+    async #updateRates() {
         // Get rates from coingecko.
         const rawRates = await this.#coingeckoRepository.getExchangeRates();
 
@@ -52,7 +53,7 @@ export class UpdateExchangeRates extends React.Component {
     }
 
     componentDidMount() {
-        this.syncLastUpdateTimestamp();
+        this.#syncLastUpdateTimestamp();
     }
 
     render() {
@@ -66,7 +67,7 @@ export class UpdateExchangeRates extends React.Component {
                         : (new Date(updateTimestamp)).toLocaleString()}
                 </span>
                 <div>
-                    <button onClick={this.handleClick} disabled={this.state.inProgress}>
+                    <button onClick={this.#handleClick} disabled={this.state.inProgress}>
                         🗘 Update exchange rates
                     </button>
                 </div>
@@ -75,6 +76,7 @@ export class UpdateExchangeRates extends React.Component {
     }
 }
 
-UpdateExchangeRates.propTypes = {
-    dbRepository: PropTypes.instanceOf(WalletRepository).isRequired
+ExchangeRatesUpdater.propTypes = {
+    dbRepository: PropTypes.instanceOf(WalletRepository).isRequired,
+    onChange: PropTypes.func.isRequired,
 };

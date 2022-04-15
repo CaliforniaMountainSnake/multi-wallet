@@ -28,6 +28,6 @@ export class TopLevelErrorBoundary extends React.Component {
                 </React.Fragment>
             );
         }
-        return this.props.children;
+        return (<React.StrictMode>{this.props.children}</React.StrictMode>);
     }
 }

@@ -15,6 +15,13 @@ export function showError(error) {
 }
 
 /**
+ * @param {any} error
+ */
+export function showWarning(error) {
+    showMessage(error, console.warn);
+}
+
+/**
  * @param {HTMLElement} element
  * @param {function(HTMLElement):Promise<any>} callback
  * @returns {Promise<any>}

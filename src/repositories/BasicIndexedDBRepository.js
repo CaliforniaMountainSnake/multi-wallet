@@ -43,7 +43,7 @@ export class BasicIndexedDBRepository {
             openRequest.onsuccess = () => {
                 this.#db = openRequest.result;
                 resolve();
-                console.log(`IndexedDB "${this.dbName}" has been opened.`);
+                console.debug(`IndexedDB "${this.dbName}" has been opened.`);
             };
         });
     }
@@ -182,7 +182,7 @@ export class BasicIndexedDBRepository {
             }
 
             migrations.get(i)();
-            console.info(`Migration "${i}" has been applied.`);
+            console.debug(`Migration "${i}" has been applied.`);
         }
     }
 }
