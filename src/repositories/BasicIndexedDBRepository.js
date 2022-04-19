@@ -87,18 +87,26 @@ export class BasicIndexedDBRepository {
     /**
      * @param {string} storeName
      * @param {any} key
-     * @returns {Promise<any>} Rejected promise if there is no row with the given key.
+     * @returns {Promise<any|undefined>} "undefined" if there is no row with the given key.
      */
     async _getByKey(storeName, key) {
         return await this._transaction(async transaction => {
             const store = transaction.objectStore(storeName);
-            const value = await this._promiseRequest(store.get(key));
-            if (value === undefined) {
-                throw new Error(`Unable to find a row with key: "${key}"`);
-            }
-
-            return value;
+            return await this._promiseRequest(store.get(key));
         }, "readonly");
+    }
+
+    /**
+     * @param {string} storeName
+     * @param {any} key
+     * @returns {Promise<any>} Rejected promise if there is no row with the given key.
+     */
+    async _getByKeyOfThrowError(storeName, key) {
+        const value = this._getByKey(storeName, key);
+        if (value !== undefined) {
+            return value;
+        }
+        throw new Error(`Unable to find a row with key: "${key}" in the store "${storeName}"`);
     }
 
     /**

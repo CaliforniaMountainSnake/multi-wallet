@@ -10,11 +10,38 @@ export class AddNewAmount extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            currency: this.props.exchangeRates.keys().next().value,
+            currency: "usd",
             amount: "",
             comment: "",
         };
     }
+
+    /**
+     * @param {Event} event
+     */
+    _handleFormSubmit = event => {
+        event.preventDefault();
+        this.#addAmount().then(() => {
+            this.props.onChange();
+
+            // Reset form inputs.
+            this.setState({
+                amount: "",
+                comment: ""
+            });
+        }).catch(error => showWarning(error));
+    };
+
+    /**
+     * @param {Event} event
+     */
+    _handleFormChange = event => {
+        const id = event.target.id.replace(this.#idPrefix, "");
+        const value = event.target.value;
+        this.setState({
+            [id]: value,
+        });
+    };
 
     async #addAmount() {
         // Validate and preprocess given data.
@@ -27,7 +54,7 @@ export class AddNewAmount extends React.Component {
                 return amountFloat;
             },
             currency: async currency => {
-                await this.props.dbRepository.getBtcToSymbolExchangeRate(currency);
+                await this.props.dbRepository.getCurrencyInfo(currency);
                 return currency;
             },
             comment: async comment => {
@@ -42,42 +69,14 @@ export class AddNewAmount extends React.Component {
             await validator.currency(this.state.currency),
             await validator.comment(this.state.comment),
         );
-        console.debug("Added key:", addedRowKey);
+        console.debug("Added amount with key:", addedRowKey);
     }
-
-    /**
-     * @param {Event} event
-     */
-    #handleSubmit = event => {
-        event.preventDefault();
-        this.#addAmount().then(() => {
-            console.log("Amount form has been submitted!");
-            this.props.onChange();
-
-            // Reset form inputs.
-            this.setState({
-                amount: "",
-                comment: ""
-            });
-        }).catch(error => showWarning(error));
-    };
-
-    /**
-     * @param {Event} event
-     */
-    #handleChange = event => {
-        const id = event.target.id.replace(this.#idPrefix, "");
-        const value = event.target.value;
-        this.setState({
-            [id]: value,
-        });
-    };
 
     render() {
         return (
             <div>
                 <h2>Add a new row</h2>
-                <form onSubmit={this.#handleSubmit}>
+                <form onSubmit={this._handleFormSubmit}>
                     <table>
                         <tbody>
                         <tr>
@@ -86,14 +85,14 @@ export class AddNewAmount extends React.Component {
                                        id={this.#idPrefix + "amount"}
                                        placeholder="Enter amount"
                                        value={this.state.amount}
-                                       onChange={this.#handleChange}/></td>
+                                       onChange={this._handleFormChange}/></td>
                         </tr>
                         <tr>
                             <td><label htmlFor={this.#idPrefix + "currency"}>Currency:</label></td>
                             <td><CurrencySelect id={this.#idPrefix + "currency"}
                                                 exchangeRates={this.props.exchangeRates}
                                                 value={this.state.currency}
-                                                onChange={this.#handleChange}/>
+                                                onChange={this._handleFormChange}/>
                             </td>
                         </tr>
                         <tr>
@@ -101,11 +100,11 @@ export class AddNewAmount extends React.Component {
                             <td><input type="text"
                                        id={this.#idPrefix + "comment"}
                                        value={this.state.comment}
-                                       onChange={this.#handleChange}/></td>
+                                       onChange={this._handleFormChange}/></td>
                         </tr>
                         <tr>
                             <td colSpan="2">
-                                <input type="submit" value="Add"/>
+                                <input type="submit" disabled={this.props.exchangeRates.size === 0} value="Add"/>
                             </td>
                         </tr>
                         </tbody>

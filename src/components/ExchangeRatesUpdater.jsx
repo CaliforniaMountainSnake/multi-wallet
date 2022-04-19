@@ -1,75 +1,30 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {WalletRepository} from "../repositories/WalletRepository";
-import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
+import {DisabledButton} from "./DisabledButton";
 import {showError} from "../helpers";
+import {WalletRepository} from "../repositories/WalletRepository";
 
-/**
- * Use a "controlled component" pattern. Set onChange() and onSubmit().
- */
 export class ExchangeRatesUpdater extends React.Component {
-    #coingeckoRepository = new CoingeckoRepository();
-
-    constructor(props) {
-        super(props);
-        this.state = {
-            inProgress: false,
-            ratesLastUpdateTimestamp: null,
-        };
-    }
-
-    /**
-     * @param event {MouseEvent}
-     * @TODO: Race condition: a button can be pressed multiple times while state is updating.
-     */
-    #handleClick = event => {
-        this.setState({inProgress: true});
-        this.#updateRates().then(rates => {
-            console.log("Exchange rates have been updated:", rates);
+    _handleClick = async () => {
+        try {
+            await this.props.loadFreshExchangeRates(this.props.dbRepository);
             this.props.onChange();
-            this.#syncLastUpdateTimestamp();
-        }).catch(error => {
-            showError(`Unable to update exchange rates: ${error}`);
-        }).finally(() => {
-            this.setState({inProgress: false});
-        });
+        } catch (error) {
+            showError(error);
+        }
     };
 
-    #syncLastUpdateTimestamp() {
-        this.props.dbRepository.getExchangeRatesLastUpdateTimestamp().then(timestamp => {
-            this.setState({ratesLastUpdateTimestamp: timestamp});
-        });
-    }
-
-    /**
-     * @returns {Promise<Map<string, BtcRate>>}
-     */
-    async #updateRates() {
-        // Get rates from coingecko.
-        const rawRates = await this.#coingeckoRepository.getExchangeRates();
-
-        // Save rates into the DB.
-        return await this.props.dbRepository.updateExchangeRates(rawRates);
-    }
-
-    componentDidMount() {
-        this.#syncLastUpdateTimestamp();
-    }
-
     render() {
-        const updateTimestamp = this.state.ratesLastUpdateTimestamp;
         return (
             <div>
                 Date of the last exchange rates update:
                 <span>
-                    {updateTimestamp === null
-                        ? "It seems you have not updated exchange rates yet..."
-                        : (new Date(updateTimestamp)).toLocaleString()}
+                    {(new Date(this.props.ratesLastUpdateTimestamp)).toLocaleString()}
                 </span>
                 <div>
-                    <button onClick={this.#handleClick} disabled={this.state.inProgress}>
+                    <DisabledButton onClick={this._handleClick}>
                         🗘 Update exchange rates
-                    </button>
+                    </DisabledButton>
                 </div>
             </div>
         );
@@ -78,5 +33,8 @@ export class ExchangeRatesUpdater extends React.Component {
 
 ExchangeRatesUpdater.propTypes = {
     dbRepository: PropTypes.instanceOf(WalletRepository).isRequired,
+    ratesLastUpdateTimestamp: PropTypes.number.isRequired,
+    // async function!
+    loadFreshExchangeRates: PropTypes.func.isRequired,
     onChange: PropTypes.func.isRequired,
 };

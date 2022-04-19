@@ -2,16 +2,18 @@ import {BtcRate} from "./CoingeckoRepository.js";
 import {BasicIndexedDBRepository} from "./BasicIndexedDBRepository";
 
 /**
+ * @TODO: create "Config" object.
  * @ts-check
  */
 export class WalletRepository extends BasicIndexedDBRepository {
+    static confNames = {
+        ratesLastUpdateTimestamp: "last_update_timestamp",
+        selectedCurrency: "selected_currency",
+    };
     #storeNames = {
         configs: "configs",
         exchangeRates: "exchange_rates",
         amounts: "amounts",
-    };
-    #confNames = {
-        ratesLastUpdateTimestamp: "last_update_timestamp"
     };
 
     get dbName() {
@@ -40,44 +42,26 @@ export class WalletRepository extends BasicIndexedDBRepository {
         return map;
     }
 
-    async getExchangeRatesLastUpdateTimestamp() {
-        return await this.getConfig(this.#confNames.ratesLastUpdateTimestamp);
-    }
-
     /**
      * @param {string} key
-     * @returns {Promise<any>} Config value.
+     * @returns {Promise<any|undefined>} Config value or undefined if this config is not set.
      */
     async getConfig(key) {
-        return (await this._getByKey(this.#storeNames.configs, key))["value"];
-    }
-
-    /**
-     * Set config if it is not set yet.
-     *
-     * @param {string} key
-     * @param {any} value
-     * @returns {Promise<boolean>}
-     */
-    async initConfig(key, value) {
-        try {
-            await this.getConfig(key);
-            return true;
-        } catch (error) {
-            await this.setConfig(key, value);
-            return false;
-        }
+        /** @type {Config|undefined} */
+        const conf = await this._getByKey(this.#storeNames.configs, key);
+        return conf === undefined ? undefined : conf.value;
     }
 
     /**
      * @param {string} key
      * @param {any} value
-     * @returns {Promise<string>} Added row's key.
+     * @returns {Promise<any>} The set config value. Should be equal to the {value} param.
      */
     async setConfig(key, value) {
         return await this._transaction(async transaction => {
             const store = transaction.objectStore(this.#storeNames.configs);
-            return await this._promiseRequest(store.put({"key": key, "value": value}));
+            await this._promiseRequest(store.put(new Config(key, value)));
+            return (await this._promiseRequest(store.get(key)))["value"];
         });
     }
 
@@ -96,7 +80,7 @@ export class WalletRepository extends BasicIndexedDBRepository {
      * @returns {Promise<Amount>}
      */
     async getAmount(key) {
-        return await this._getByKey(this.#storeNames.amounts, key);
+        return await this._getByKeyOfThrowError(this.#storeNames.amounts, key);
     }
 
     /**
@@ -124,14 +108,14 @@ export class WalletRepository extends BasicIndexedDBRepository {
 
     /**
      * @param {string} symbol
-     * @returns {Promise<BtcRate>}
+     * @returns {Promise<CurrencyInfo>}
      */
-    async getBtcToSymbolExchangeRate(symbol) {
-        return await this._getByKey(this.#storeNames.exchangeRates, symbol);
+    async getCurrencyInfo(symbol) {
+        return await this._getByKeyOfThrowError(this.#storeNames.exchangeRates, symbol);
     }
 
     /**
-     * @returns {Promise<Map<string, BtcRate>>}
+     * @returns {Promise<Map<string, CurrencyInfo>>}
      */
     async getExchangeRates() {
         return await this._transaction(async transaction => {
@@ -142,7 +126,7 @@ export class WalletRepository extends BasicIndexedDBRepository {
 
     /**
      * @param {Map<string, BtcRate>} data
-     * @returns {Promise<Map<string, BtcRate>>}
+     * @returns {Promise<void>}
      */
     async updateExchangeRates(data) {
         return await this._transaction(async transaction => {
@@ -151,16 +135,27 @@ export class WalletRepository extends BasicIndexedDBRepository {
 
             // Save exchange rates.
             for (const [key, value] of data.entries()) {
-                ratesStore.put(Object.assign({"symbol": key}, value));
+                // ratesStore.put(Object.assign({"symbol": key}, value));
+                ratesStore.put(new CurrencyInfo(key, value.name, value.unit, value.value, value.type));
             }
 
             // Set last update timestamp.
-            await this._promiseRequest(configStore.put({
-                "key": this.#confNames.ratesLastUpdateTimestamp,
-                "value": Date.now()
-            }));
-            return await this._promiseCursorRequest(ratesStore.openCursor());
+            await this._promiseRequest(configStore.put(new Config(
+                WalletRepository.confNames.ratesLastUpdateTimestamp,
+                Date.now(),
+            )));
         });
+    }
+}
+
+export class Config {
+    /**
+     * @param {string} key
+     * @param {any} value
+     */
+    constructor(key, value) {
+        this.key = key;
+        this.value = value;
     }
 }
 
@@ -174,5 +169,19 @@ export class Amount {
         this.amount = amount;
         this.symbol = symbol;
         this.comment = comment;
+    }
+}
+
+export class CurrencyInfo extends BtcRate {
+    /**
+     * @param {string} symbol
+     * @param {string} name
+     * @param {string} unit
+     * @param {number} value
+     * @param {string} type
+     */
+    constructor(symbol, name, unit, value, type) {
+        super(name, unit, value, type);
+        this.symbol = symbol;
     }
 }
