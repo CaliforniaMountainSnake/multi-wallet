@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import {CurrencySelect} from "./CurrencySelect";
 import {Amount, CurrencyInfo} from "../repositories/WalletRepository";
+import {NonBreakingSpaceText} from "./NonBreakingSpaceText";
 import {convertAmountToCurrency, formatAmount} from "../helpers";
 
 export class AmountTotalRow extends React.Component {
@@ -30,7 +31,11 @@ export class AmountTotalRow extends React.Component {
         return (
             <tr>
                 <td/>
-                <td>{formatAmount(this.#calculateTotalSum())} {selectedCurrencyInfo.unit}</td>
+                <td>
+                    <NonBreakingSpaceText>
+                        {formatAmount(this.#calculateTotalSum())} {selectedCurrencyInfo.unit}
+                    </NonBreakingSpaceText>
+                </td>
                 <td colSpan="2">
                     <CurrencySelect id={"selected_currency"} exchangeRates={rates}
                                     value={selectedCurrencyInfo.symbol} onChange={this.props.onChange}/>

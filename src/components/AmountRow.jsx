@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import {Amount, CurrencyInfo} from "../repositories/WalletRepository";
 import {DisabledButton} from "./DisabledButton";
+import {NonBreakingSpaceText} from "./NonBreakingSpaceText";
 import {formatAmount, convertAmountToCurrency} from "../helpers";
 
 /**
@@ -20,8 +21,14 @@ export class AmountRow extends React.Component {
 
         return (
             <tr>
-                <td title={currencyInfo.name}>{`${amount.amount} ${currencyInfo.unit}`}</td>
-                <td>{formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}</td>
+                <td title={currencyInfo.name}>
+                    <NonBreakingSpaceText>{`${amount.amount} ${currencyInfo.unit}`}</NonBreakingSpaceText>
+                </td>
+                <td>
+                    <NonBreakingSpaceText>
+                        {formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}
+                    </NonBreakingSpaceText>
+                </td>
                 <td>{amount.comment === undefined ? "" : amount.comment}</td>
                 <td>
                     <DisabledButton identifier={this.props.amountId} onClick={this.props.onDelete}>

@@ -66,26 +66,28 @@ export class AmountsTable extends React.Component {
         return (
             <div>
                 <h2>Your wallet</h2>
-                <table border="1" id="data_table">
-                    <thead>
-                    <tr>
-                        <th>Amount</th>
-                        <th id="amount_in_selected_currency">Amount in {selectedCurrencyInfo.unit}</th>
-                        <th>Comment</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tfoot>
-                    <tr>
-                        <th colSpan="5">Total:</th>
-                    </tr>
-                    <AmountTotalRow amounts={this.props.amounts}
-                                    exchangeRates={rates}
-                                    selectedCurrencySymbol={this.props.selectedCurrencySymbol}
-                                    onChange={this._updateSelectedCurrency}/>
-                    </tfoot>
-                    <tbody>{rows}</tbody>
-                </table>
+                <div style={{overflowX: "auto"}}>
+                    <table border="1">
+                        <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th id="amount_in_selected_currency">Amount in {selectedCurrencyInfo.unit}</th>
+                            <th>Comment</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tfoot>
+                        <tr>
+                            <th colSpan="5">Total:</th>
+                        </tr>
+                        <AmountTotalRow amounts={this.props.amounts}
+                                        exchangeRates={rates}
+                                        selectedCurrencySymbol={this.props.selectedCurrencySymbol}
+                                        onChange={this._updateSelectedCurrency}/>
+                        </tfoot>
+                        <tbody>{rows}</tbody>
+                    </table>
+                </div>
             </div>
         );
     }
