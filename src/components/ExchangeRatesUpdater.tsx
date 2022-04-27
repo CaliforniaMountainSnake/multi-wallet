@@ -1,11 +1,15 @@
-import React from "react";
-import PropTypes from "prop-types";
+import React, {ReactNode} from "react";
 import {DisabledButton} from "./DisabledButton";
 import {showError} from "../helpers";
 import {WalletRepository} from "../repositories/WalletRepository";
 
-export class ExchangeRatesUpdater extends React.Component {
-    _handleClick = async () => {
+export class ExchangeRatesUpdater extends React.Component<{
+    dbRepository: WalletRepository,
+    ratesLastUpdateTimestamp: number,
+    loadFreshExchangeRates: (dbRepository: WalletRepository) => Promise<void>
+    onChange: () => void,
+}> {
+    private handleClick = async () => {
         try {
             await this.props.loadFreshExchangeRates(this.props.dbRepository);
             this.props.onChange();
@@ -14,7 +18,7 @@ export class ExchangeRatesUpdater extends React.Component {
         }
     };
 
-    render() {
+    render(): ReactNode {
         return (
             <div>
                 Date of the last exchange rates update:
@@ -22,7 +26,7 @@ export class ExchangeRatesUpdater extends React.Component {
                     {(new Date(this.props.ratesLastUpdateTimestamp)).toLocaleString()}
                 </span>
                 <div>
-                    <DisabledButton onClick={this._handleClick}>
+                    <DisabledButton onClick={this.handleClick}>
                         🗘 Update exchange rates
                     </DisabledButton>
                 </div>
@@ -30,11 +34,3 @@ export class ExchangeRatesUpdater extends React.Component {
         );
     }
 }
-
-ExchangeRatesUpdater.propTypes = {
-    dbRepository: PropTypes.instanceOf(WalletRepository).isRequired,
-    ratesLastUpdateTimestamp: PropTypes.number.isRequired,
-    // async function!
-    loadFreshExchangeRates: PropTypes.func.isRequired,
-    onChange: PropTypes.func.isRequired,
-};

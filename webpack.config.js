@@ -3,14 +3,14 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = (env, argv) => {
     const config = {
-        entry: "./src/index.jsx",
+        entry: "./src/index.tsx",
         output: {
             path: path.resolve(__dirname, "./www"),
             filename: "bundle.js",
             clean: true,
         },
         resolve: {
-            extensions: [".jsx", "..."],
+            extensions: [".js", ".jsx", ".ts", ".tsx", "..."],
         },
         module: {
             rules: [
@@ -18,6 +18,11 @@ module.exports = (env, argv) => {
                     test: /\.m?jsx?$/,
                     exclude: /node_modules/,
                     use: {loader: "babel-loader"}
+                },
+                {
+                    test: /\.tsx?$/,
+                    exclude: /node_modules/,
+                    use: {loader: "ts-loader"}
                 },
                 {
                     test: /\.css$/i,

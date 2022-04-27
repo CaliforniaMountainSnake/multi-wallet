@@ -4,3 +4,7 @@
         color: white;
     }
 }
+
+table.amounts, .amounts th, .amounts td {
+    border: 1px solid;
+}
