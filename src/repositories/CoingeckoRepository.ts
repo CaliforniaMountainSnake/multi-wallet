@@ -1,5 +1,5 @@
 export class CoingeckoRepository {
-    #apiDomain: string = "https://api.coingecko.com/api/v3";
+    private apiDomain: string = "https://api.coingecko.com/api/v3";
 
     async getSupportedVsCurrencies(): Promise<string[]> {
         return await this.request("/simple/supported_vs_currencies");
@@ -11,7 +11,7 @@ export class CoingeckoRepository {
     }
 
     private async request(url: string): Promise<any> {
-        const response: Response = await fetch(this.#apiDomain + url, {headers: {"Accept": "application/json"}});
+        const response: Response = await fetch(this.apiDomain + url, {headers: {"Accept": "application/json"}});
         if (response.status !== 200) {
             throw new Error(`Wrong API response code (${response.status})`);
         }

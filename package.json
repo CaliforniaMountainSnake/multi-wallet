@@ -7,6 +7,7 @@
         "build-dev": "webpack --mode=development",
         "build-prod": "webpack --mode=production",
         "update_browserslist": "npx browserslist@latest --update-db",
+        "check-types": "tsc --noEmit",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "repository": {
