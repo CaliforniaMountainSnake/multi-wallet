@@ -7,13 +7,15 @@ result can be presented in any currency you want.
 
 Exchange rates are updated using the `Coingecko` API.
 
-**Try the live demo
-here:** [https://californiamountainsnake.github.io/multi-wallet/www](https://californiamountainsnake.github.io/multi-wallet/www)
+**Try a live demo here:**
+[https://californiamountainsnake.github.io/multi-wallet/www](https://californiamountainsnake.github.io/multi-wallet/www)
 
 ## Stack:
 
-- Pure (almost) HTML
+- Pure (mostly) HTML
+- Webpack
+- ~~Babel~~
 - React
-- Webpack, Babel
+- TypeScript (`ts-loader`),
 - IndexedDB for data storage
 - Coingecko API for exchange rates
