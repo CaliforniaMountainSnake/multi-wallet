@@ -89,7 +89,7 @@ export class AddNewAmount extends React.Component<{
     render(): ReactNode {
         return (
             <div>
-                <h2>Add a new row</h2>
+                <h2>Add new amount</h2>
                 <form onSubmit={this.handleFormSubmit}>
                     <table>
                         <tbody>

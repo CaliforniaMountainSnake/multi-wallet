@@ -1,16 +1,18 @@
 import {Amount, CurrencyInfo} from "./repositories/WalletRepository";
 
-export function showMessage(error: any, logger: (message?: any, ...optionalParams: any[]) => void = console.log): void {
-    logger(error);
-    alert(error);
+function showMessage(logger: (message?: any, ...optionalParams: any[]) => void = console.log,
+                     message?: any, ...optionalParams: any[]
+): void {
+    logger(message, ...optionalParams);
+    alert(message + " " + optionalParams.join(" "));
 }
 
-export function showError(error: any): void {
-    showMessage(error, console.error);
+export function showError(message?: any, ...optionalParams: any[]): void {
+    showMessage(console.error, message, ...optionalParams);
 }
 
-export function showWarning(error: any): void {
-    showMessage(error, console.warn);
+export function showWarning(message?: any, ...optionalParams: any[]): void {
+    showMessage(console.warn, message, ...optionalParams);
 }
 
 export function formatAmount(amount: number): string {
@@ -38,7 +40,7 @@ export async function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getRelativeExchangeRate(exchangeRates: Map<string, CurrencyInfo>, symbol1: string, symbol2: string) {
+export function getRelativeExchangeRate(exchangeRates: Map<string, CurrencyInfo>, symbol1: string, symbol2: string) {
     const cur1 = exchangeRates.get(symbol1);
     const cur2 = exchangeRates.get(symbol2);
     if (cur1 === undefined || cur2 === undefined) {

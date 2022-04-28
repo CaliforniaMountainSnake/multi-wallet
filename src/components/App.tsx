@@ -5,9 +5,10 @@ import {AddNewAmount} from "./AddNewAmount";
 import {AmountsTable} from "./AmountsTable";
 import {DisabledButton} from "./DisabledButton";
 import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
+import {UserRatesTable} from "./UserRates/UserRatesTable";
 
 interface State {
-    amounts: Map<string, Amount>,
+    amounts: Map<number, Amount>,
     exchangeRates: Map<string, CurrencyInfo>,
     dbRepository?: WalletRepository,
     ratesLastUpdateTimestamp?: number,
@@ -114,6 +115,7 @@ export class App extends React.Component<{}, State> {
                                       ratesLastUpdateTimestamp={this.state.ratesLastUpdateTimestamp}
                                       loadFreshExchangeRates={this.loadFreshExchangeRates}
                                       onChange={this.onDbDataChanged}/>
+                <UserRatesTable dbRepository={this.state.dbRepository} exchangeRates={this.state.exchangeRates}/>
                 <AddNewAmount dbRepository={this.state.dbRepository}
                               exchangeRates={this.state.exchangeRates}
                               onChange={this.onDbDataChanged}/>

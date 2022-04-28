@@ -4,9 +4,10 @@ interface State {
     disabled: boolean;
 }
 
-export class DisabledButton extends React.Component<{
+export class DisabledButton<T> extends React.Component<{
     children: ReactNode,
-    onClick: () => Promise<void>,
+    onClick: (payload?: T) => Promise<void>,
+    payload?: T,
 }, State> {
     state: State = {
         disabled: false
@@ -14,7 +15,7 @@ export class DisabledButton extends React.Component<{
 
     private _handleClick = (): void => {
         this.setState({disabled: true}, () => {
-            this.props.onClick().catch(error => {
+            this.props.onClick(this.props.payload).catch(error => {
                 this.setState(() => {
                     throw error;
                 });

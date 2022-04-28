@@ -5,6 +5,7 @@ export class WalletRepository extends BasicIndexedDBRepository {
     private storeNames = {
         configs: "configs",
         exchangeRates: "exchange_rates",
+        userRates: "user_exchange_rates",
         amounts: "amounts",
     };
 
@@ -13,7 +14,7 @@ export class WalletRepository extends BasicIndexedDBRepository {
     }
 
     get dbVersion(): number {
-        return 3;
+        return 4;
     }
 
     getMigrations(): Map<number, (db: IDBDatabase) => void> {
@@ -26,6 +27,9 @@ export class WalletRepository extends BasicIndexedDBRepository {
         });
         map.set(3, (db: IDBDatabase) => {
             db.createObjectStore(this.storeNames.amounts, {autoIncrement: true});
+        });
+        map.set(4, (db: IDBDatabase) => {
+            db.createObjectStore(this.storeNames.userRates, {autoIncrement: true});
         });
         return map;
     }
@@ -47,10 +51,10 @@ export class WalletRepository extends BasicIndexedDBRepository {
         });
     }
 
-    async getAmounts(): Promise<Map<string, Amount>> {
+    async getAmounts(): Promise<Map<number, Amount>> {
         return await this.transaction(async transaction => {
             const store = transaction.objectStore(this.storeNames.amounts);
-            return await this.promiseCursorRequest<string, Amount>(store.openCursor());
+            return await this.promiseCursorRequest<number, Amount>(store.openCursor());
         }, "readonly");
     }
 
@@ -67,6 +71,24 @@ export class WalletRepository extends BasicIndexedDBRepository {
 
     async deleteAmount(key: number): Promise<void> {
         return await this.deleteByKey(this.storeNames.amounts, key);
+    }
+
+    async getUserRates(): Promise<Map<number, UserRate>> {
+        return await this.transaction(async transaction => {
+            const store = transaction.objectStore(this.storeNames.userRates);
+            return await this.promiseCursorRequest<number, UserRate>(store.openCursor());
+        }, "readonly");
+    }
+
+    async addUserRate(rate: UserRate): Promise<IDBValidKey> {
+        return await this.transaction(async transaction => {
+            const store = transaction.objectStore(this.storeNames.userRates);
+            return await this.promiseRequest(store.add(rate));
+        });
+    }
+
+    async deleteUserRate(key: number): Promise<void> {
+        return await this.deleteByKey(this.storeNames.userRates, key);
     }
 
     async getExchangeRates(): Promise<Map<string, CurrencyInfo>> {
@@ -107,6 +129,11 @@ export interface Amount {
     amount: number,
     symbol: string,
     comment: string | undefined
+}
+
+export interface UserRate {
+    symbol1: string,
+    symbol2: string,
 }
 
 export interface CurrencyInfo extends BtcRate {

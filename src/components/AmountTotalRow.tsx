@@ -5,7 +5,7 @@ import {NonBreakingSpaceText} from "./NonBreakingSpaceText";
 import {convertAmountToCurrency, formatAmount} from "../helpers";
 
 export class AmountTotalRow extends React.Component<{
-    amounts: Map<string, Amount>,
+    amounts: Map<number, Amount>,
     exchangeRates: Map<string, CurrencyInfo>,
     selectedCurrencySymbol: string,
     onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void,

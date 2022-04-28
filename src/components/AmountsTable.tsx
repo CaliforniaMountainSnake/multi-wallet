@@ -6,7 +6,7 @@ import {NonBreakingSpaceText} from "./NonBreakingSpaceText";
 
 export class AmountsTable extends React.Component<{
     dbRepository: WalletRepository,
-    amounts: Map<string, Amount>,
+    amounts: Map<number, Amount>,
     exchangeRates: Map<string, CurrencyInfo>,
     selectedCurrencySymbol: string,
     onAmountsChange: () => void,
@@ -47,10 +47,10 @@ export class AmountsTable extends React.Component<{
         const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol)!;
 
         // Add new rows.
-        const rows = [];
+        const amounts = [];
         for (const [id, amount] of this.props.amounts.entries()) {
-            rows.push(
-                <AmountRow key={id} amountId={parseInt(id)} amount={amount}
+            amounts.push(
+                <AmountRow key={id} amountId={id} amount={amount}
                            exchangeRates={this.props.exchangeRates}
                            selectedCurrencySymbol={this.props.selectedCurrencySymbol}
                            onDelete={this.deleteAmount}/>
@@ -61,7 +61,7 @@ export class AmountsTable extends React.Component<{
             <div>
                 <h2>Your wallet</h2>
                 <div style={{overflowX: "auto"}}>
-                    <table className={"amounts"}>
+                    <table className={"data-table"}>
                         <thead>
                         <tr>
                             <th>Amount</th>
@@ -81,7 +81,7 @@ export class AmountsTable extends React.Component<{
                                         selectedCurrencySymbol={this.props.selectedCurrencySymbol}
                                         onChange={this.updateSelectedCurrency}/>
                         </tfoot>
-                        <tbody>{rows}</tbody>
+                        <tbody>{amounts}</tbody>
                     </table>
                 </div>
             </div>

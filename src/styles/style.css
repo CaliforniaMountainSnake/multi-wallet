@@ -5,6 +5,6 @@
     }
 }
 
-table.amounts, .amounts th, .amounts td {
+table.data-table, .data-table th, .data-table td {
     border: 1px solid;
 }

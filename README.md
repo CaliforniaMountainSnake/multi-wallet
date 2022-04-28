@@ -16,6 +16,6 @@ Exchange rates are updated using the `Coingecko` API.
 - Webpack
 - ~~Babel~~
 - React
-- TypeScript (`ts-loader`),
+- TypeScript (`ts-loader`)
 - IndexedDB for data storage
 - Coingecko API for exchange rates

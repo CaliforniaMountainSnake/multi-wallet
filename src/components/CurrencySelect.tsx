@@ -5,7 +5,7 @@ export class CurrencySelect extends React.Component<{
     id: string,
     exchangeRates: Map<string, CurrencyInfo>,
     onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void,
-    value?: string,
+    value: string,
 }> {
     render(): ReactNode {
         const options = [];
