@@ -8,6 +8,7 @@ export class DisabledButton<T> extends React.Component<{
     children: ReactNode,
     onClick: (payload?: T) => Promise<void>,
     payload?: T,
+    title?: string,
 }, State> {
     state: State = {
         disabled: false
@@ -26,6 +27,7 @@ export class DisabledButton<T> extends React.Component<{
     };
 
     render(): ReactNode {
-        return (<button onClick={this._handleClick} disabled={this.state.disabled}>{this.props.children}</button>);
+        return (<button disabled={this.state.disabled} title={this.props.title}
+                        onClick={this._handleClick}>{this.props.children}</button>);
     }
 }

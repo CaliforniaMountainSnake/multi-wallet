@@ -1,8 +1,8 @@
 import React, {ReactNode} from "react";
 import {AddNewRate} from "./AddNewRate";
 import {CurrencyInfo, UserRate, WalletRepository} from "../../repositories/WalletRepository";
-import {DisabledButton} from "../DisabledButton";
-import {NonBreakingSpaceText} from "../NonBreakingSpaceText";
+import {DisabledButton} from "../Utils/DisabledButton";
+import {NonBreakingSpaceText} from "../Utils/NonBreakingSpaceText";
 import {formatAmount, getRelativeExchangeRate, showError} from "../../helpers";
 
 interface State {

@@ -9,12 +9,15 @@ export abstract class BasicIndexedDBRepository {
     /**
      * Get migrations. First migration must have an index "1".
      */
-    abstract getMigrations(): Map<number, (db: IDBDatabase) => void>
+    abstract getMigrations(): Map<number, (db: IDBDatabase, transaction: IDBTransaction) => Promise<void>>
 
-    async open(): Promise<void> {
+    async open(onUpgradeError: (error: Error) => void): Promise<void> {
         return new Promise((resolve, reject) => {
             const request: IDBOpenDBRequest = indexedDB.open(this.dbName, this.dbVersion);
-            request.onupgradeneeded = event => this.migrateIndexedDB(event, request.result);
+            request.onupgradeneeded = event => {
+                this.migrateIndexedDB(event, request.result, request.transaction!)
+                    .catch((error: Error) => onUpgradeError(error));
+            };
             request.onblocked = event => this.onBlocked(event);
             request.onerror = () => reject(request.error);
             request.onsuccess = () => {
@@ -121,7 +124,7 @@ export abstract class BasicIndexedDBRepository {
         alert(msg);
     }
 
-    private migrateIndexedDB(event: IDBVersionChangeEvent, db: IDBDatabase): void {
+    private async migrateIndexedDB(event: IDBVersionChangeEvent, db: IDBDatabase, transaction: IDBTransaction): Promise<void> {
         console.warn(`IndexedDB upgrade needed! [${event.oldVersion} to ${event.newVersion}]`);
         if (!event.newVersion) {
             console.debug("Database is being deleted...");
@@ -135,8 +138,10 @@ export abstract class BasicIndexedDBRepository {
                 throw new Error(`Migration "${i}" does not exist!`);
             }
 
-            migration(db);
+            event.target;
+            await migration(db, transaction);
             console.debug(`Migration "${i}" has been applied.`);
         }
+        console.debug("All migrations have been applied.");
     }
 }

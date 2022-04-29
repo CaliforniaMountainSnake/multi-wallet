@@ -1,5 +1,5 @@
 import React, {ReactNode} from "react";
-import {DisabledButton} from "./DisabledButton";
+import {DisabledButton} from "./Utils/DisabledButton";
 import {showError} from "../helpers";
 import {WalletRepository} from "../repositories/WalletRepository";
 
@@ -22,6 +22,7 @@ export class ExchangeRatesUpdater extends React.Component<{
         return (
             <div>
                 Date of the last exchange rates update:
+                <br/>
                 <span>
                     {(new Date(this.props.ratesLastUpdateTimestamp)).toLocaleString()}
                 </span>

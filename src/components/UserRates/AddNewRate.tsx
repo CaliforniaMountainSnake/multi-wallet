@@ -1,7 +1,7 @@
 import React, {ReactNode} from "react";
 import {CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {CurrencySelect} from "../CurrencySelect";
-import {DisabledButton} from "../DisabledButton";
+import {DisabledButton} from "../Utils/DisabledButton";
 import {showWarning} from "../../helpers";
 
 interface State {

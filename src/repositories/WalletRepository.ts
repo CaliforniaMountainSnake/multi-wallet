@@ -14,22 +14,31 @@ export class WalletRepository extends BasicIndexedDBRepository {
     }
 
     get dbVersion(): number {
-        return 4;
+        return 5;
     }
 
-    getMigrations(): Map<number, (db: IDBDatabase) => void> {
-        const map = new Map();
-        map.set(1, (db: IDBDatabase) => {
+    getMigrations(): Map<number, (db: IDBDatabase, transaction: IDBTransaction) => Promise<void>> {
+        const map = new Map<number, (db: IDBDatabase, transaction: IDBTransaction) => Promise<void>>();
+        map.set(1, async (db: IDBDatabase) => {
             db.createObjectStore(this.storeNames.configs, {keyPath: "key"});
         });
-        map.set(2, (db: IDBDatabase) => {
+        map.set(2, async (db: IDBDatabase) => {
             db.createObjectStore(this.storeNames.exchangeRates, {keyPath: "symbol"});
         });
-        map.set(3, (db: IDBDatabase) => {
+        map.set(3, async (db: IDBDatabase) => {
             db.createObjectStore(this.storeNames.amounts, {autoIncrement: true});
         });
-        map.set(4, (db: IDBDatabase) => {
+        map.set(4, async (db: IDBDatabase) => {
             db.createObjectStore(this.storeNames.userRates, {autoIncrement: true});
+        });
+        map.set(5, async (db: IDBDatabase, transaction: IDBTransaction) => {
+            // Add a new "enabled" property to all amounts.
+            const store = transaction.objectStore(this.storeNames.amounts);
+            const amounts = await this.promiseCursorRequest<number, Amount>(store.openCursor());
+            for (const [key, amount] of amounts) {
+                amount.enabled = true;
+                store.put(amount, key);
+            }
         });
         return map;
     }
@@ -62,10 +71,10 @@ export class WalletRepository extends BasicIndexedDBRepository {
         return await this.getByKeyOfThrowError(this.storeNames.amounts, key);
     }
 
-    async addAmount(amount: Amount): Promise<IDBValidKey> {
+    async putAmount(amount: Amount, key?: number): Promise<IDBValidKey> {
         return await this.transaction(async transaction => {
             const store = transaction.objectStore(this.storeNames.amounts);
-            return await this.promiseRequest(store.add(amount));
+            return await this.promiseRequest(store.put(amount, key));
         });
     }
 
@@ -128,7 +137,8 @@ export class WalletRepository extends BasicIndexedDBRepository {
 export interface Amount {
     amount: number,
     symbol: string,
-    comment: string | undefined
+    enabled: boolean,
+    comment?: string
 }
 
 export interface UserRate {

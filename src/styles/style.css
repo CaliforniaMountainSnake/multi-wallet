@@ -8,3 +8,7 @@
 table.data-table, .data-table th, .data-table td {
     border: 1px solid;
 }
+
+.disabled {
+    opacity: 0.3;
+}

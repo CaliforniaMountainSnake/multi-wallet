@@ -1,12 +1,13 @@
 import React, {ReactNode} from "react";
-import {CurrencySelect} from "./CurrencySelect";
-import {CurrencyInfo, WalletRepository} from "../repositories/WalletRepository";
-import {showWarning} from "../helpers";
+import {CurrencySelect} from "../CurrencySelect";
+import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
+import {showWarning} from "../../helpers";
 
-interface State {
-    currency: string,
-    amount: string,
-    comment: string,
+type ToString<T> = {
+    [Property in keyof T]: string;
+}
+
+interface State extends ToString<Required<Omit<Amount, "enabled">>> {
 }
 
 export class AddNewAmount extends React.Component<{
@@ -17,13 +18,13 @@ export class AddNewAmount extends React.Component<{
     private idPrefix = `${this.constructor.name}_`;
     private ids = {
         amount: `${this.idPrefix}amount`,
-        currency: `${this.idPrefix}currency`,
+        symbol: `${this.idPrefix}symbol`,
         comment: `${this.idPrefix}comment`,
     };
 
     state: State = {
-        currency: this.props.exchangeRates.keys().next().value,
         amount: "",
+        symbol: this.props.exchangeRates.keys().next().value,
         comment: "",
     };
 
@@ -46,8 +47,8 @@ export class AddNewAmount extends React.Component<{
             case this.ids.amount:
                 this.setState({amount: value});
                 break;
-            case this.ids.currency:
-                this.setState({currency: value});
+            case this.ids.symbol:
+                this.setState({symbol: value});
                 break;
             case this.ids.comment:
                 this.setState({comment: value});
@@ -65,11 +66,11 @@ export class AddNewAmount extends React.Component<{
                 }
                 return amountFloat;
             },
-            currency: async (currency: string): Promise<string> => {
-                if (!this.props.exchangeRates.get(currency)) {
-                    throw new Error(`Wrong currency symbol: "${currency}"!`);
+            symbol: async (symbol: string): Promise<string> => {
+                if (!this.props.exchangeRates.get(symbol)) {
+                    throw new Error(`Wrong currency symbol: "${symbol}"!`);
                 }
-                return currency;
+                return symbol;
             },
             comment: async (comment: string): Promise<string | undefined> => {
                 const trimmed = comment.trim();
@@ -78,10 +79,11 @@ export class AddNewAmount extends React.Component<{
         };
 
         // Now we can add this values into the DB.
-        const addedRowKey = await this.props.dbRepository.addAmount({
+        const addedRowKey = await this.props.dbRepository.putAmount({
             amount: await validator.amount(this.state.amount),
-            symbol: await validator.currency(this.state.currency),
+            symbol: await validator.symbol(this.state.symbol),
             comment: await validator.comment(this.state.comment),
+            enabled: true,
         });
         console.debug("Added amount with key:", addedRowKey);
     }
@@ -102,10 +104,10 @@ export class AddNewAmount extends React.Component<{
                                        onChange={this.handleFormChange}/></td>
                         </tr>
                         <tr>
-                            <th><label htmlFor={this.ids.currency}>Currency:</label></th>
-                            <td><CurrencySelect id={this.ids.currency}
+                            <th><label htmlFor={this.ids.symbol}>Currency:</label></th>
+                            <td><CurrencySelect id={this.ids.symbol}
                                                 exchangeRates={this.props.exchangeRates}
-                                                value={this.state.currency}
+                                                value={this.state.symbol}
                                                 onChange={this.handleFormChange}/>
                             </td>
                         </tr>

@@ -1,11 +1,13 @@
 import React from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../repositories/WalletRepository";
 import {ExchangeRatesUpdater} from "./ExchangeRatesUpdater";
-import {AddNewAmount} from "./AddNewAmount";
-import {AmountsTable} from "./AmountsTable";
-import {DisabledButton} from "./DisabledButton";
+import {AddNewAmount} from "./Amounts/AddNewAmount";
+import {AmountsTable} from "./Amounts/AmountsTable";
+import {DisabledButton} from "./Utils/DisabledButton";
 import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
 import {UserRatesTable} from "./UserRates/UserRatesTable";
+import {Simulate} from "react-dom/test-utils";
+import error = Simulate.error;
 
 interface State {
     amounts: Map<number, Amount>,
@@ -71,7 +73,11 @@ export class App extends React.Component<{}, State> {
 
     private async initialize() {
         const dbRepository = new WalletRepository();
-        await dbRepository.open();
+        await dbRepository.open(async (error: Error) => {
+            this.setState(() => {
+                throw error;
+            });
+        });
 
         // Load data for the first time.
         const data = await this.loadDbData(dbRepository);
