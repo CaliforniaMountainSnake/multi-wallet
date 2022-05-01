@@ -2,7 +2,6 @@ import React, {ReactNode} from "react";
 import {AddNewRate} from "./AddNewRate";
 import {CurrencyInfo, UserRate, WalletRepository} from "../../repositories/WalletRepository";
 import {DisabledButton} from "../Utils/DisabledButton";
-import {NonBreakingSpaceText} from "../Utils/NonBreakingSpaceText";
 import {formatAmount, getRelativeExchangeRate, showError} from "../../helpers";
 
 interface State {
@@ -51,17 +50,17 @@ export class UserRatesTable extends React.Component<{
                 const currInfo2 = this.props.exchangeRates.get(rate.symbol2)!;
                 ratesRows.push(
                     <tr key={id}>
-                        <td title={`${currInfo1.name} / ${currInfo2.name}`}>
-                            <NonBreakingSpaceText>{rate.symbol1}/{rate.symbol2}</NonBreakingSpaceText>
+                        <td className={"text-nowrap"} title={`${currInfo1.name} / ${currInfo2.name}`}>
+                            {rate.symbol1}/{rate.symbol2}
                         </td>
-                        <td>
-                            <NonBreakingSpaceText>
-                                {formatAmount(getRelativeExchangeRate(this.props.exchangeRates, rate.symbol1, rate.symbol2))}
-                                {" "}{currInfo2.unit}
-                            </NonBreakingSpaceText>
+                        <td className={"text-nowrap"}>
+                            {formatAmount(getRelativeExchangeRate(this.props.exchangeRates, rate.symbol1, rate.symbol2))}
+                            {" "}{currInfo2.unit}
                         </td>
-                        <td>
-                            <DisabledButton<number> payload={id} onClick={this.deleteUserRate}>Delete</DisabledButton>
+                        <td className={"text-center"}>
+                            <DisabledButton<number> payload={id}
+                                                    className={"btn btn-secondary"}
+                                                    onClick={this.deleteUserRate}>Delete</DisabledButton>
                         </td>
                     </tr>
                 );
@@ -69,10 +68,10 @@ export class UserRatesTable extends React.Component<{
         }
 
         return (
-            <div>
-                <h2>Favorite exchange rates</h2>
-                <div style={{overflowX: "auto"}}>
-                    <table className={"data-table"}>
+            <div className={"mb-3"}>
+                <h2 className={"card-title"}>Favorite exchange rates</h2>
+                <div className={"table-responsive"}>
+                    <table className={"table table-bordered align-middle"}>
                         <thead>
                         <tr>
                             <th>Pair</th>

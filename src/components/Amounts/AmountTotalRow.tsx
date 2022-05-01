@@ -1,7 +1,6 @@
 import React, {ReactNode} from "react";
 import {CurrencySelect} from "../CurrencySelect";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
-import {NonBreakingSpaceText} from "../Utils/NonBreakingSpaceText";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
 
 export class AmountTotalRow extends React.Component<{
@@ -39,14 +38,14 @@ export class AmountTotalRow extends React.Component<{
         const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol)!;
         return (
             <tr>
-                <td/>
-                <td>
-                    <NonBreakingSpaceText>
-                        {formatAmount(this.calculateTotalSum())} {selectedCurrencyInfo.unit}
-                    </NonBreakingSpaceText>
+                <th>Total:</th>
+                <td className={"text-nowrap"}>
+                    {formatAmount(this.calculateTotalSum())} {selectedCurrencyInfo.unit}
                 </td>
-                <td colSpan={2}>
-                    <CurrencySelect id={"selected_currency"} exchangeRates={this.props.exchangeRates}
+                <td colSpan={3}>
+                    <CurrencySelect id={"selected_currency"}
+                                    className={"form-select"}
+                                    exchangeRates={this.props.exchangeRates}
                                     value={selectedCurrencyInfo.symbol} onChange={this.updateSelectedCurrency}/>
                 </td>
             </tr>

@@ -1,7 +1,6 @@
 import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {DisabledButton} from "../Utils/DisabledButton";
-import {NonBreakingSpaceText} from "../Utils/NonBreakingSpaceText";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
 
 export class AmountRow extends React.Component<{
@@ -29,12 +28,16 @@ export class AmountRow extends React.Component<{
         return msg;
     }
 
-    private switchAmountStatus = async () => {
+    private switchAmountStatus: React.ChangeEventHandler<HTMLInputElement> = event => {
         const clonedAmount = Object.assign({}, this.props.amount);
         clonedAmount.enabled = !clonedAmount.enabled;
 
-        await this.props.dbRepository.putAmount(clonedAmount, this.props.amountId);
-        this.props.onChange();
+        this.props.dbRepository.putAmount(clonedAmount, this.props.amountId)
+            .then(this.props.onChange).catch(error => {
+            this.setState(() => {
+                throw error;
+            });
+        });
     };
 
     render(): ReactNode {
@@ -48,23 +51,24 @@ export class AmountRow extends React.Component<{
 
         return (
             <tr className={this.props.amount.enabled ? undefined : "disabled"}>
-                <td title={currencyInfo.name}>
-                    <NonBreakingSpaceText>{`${this.props.amount.amount} ${currencyInfo.unit}`}</NonBreakingSpaceText>
+                <td className={"text-nowrap"} title={currencyInfo.name}>
+                    {`${this.props.amount.amount} ${currencyInfo.unit}`}
                 </td>
-                <td>
-                    <NonBreakingSpaceText>
-                        {formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}
-                    </NonBreakingSpaceText>
+                <td className={"text-nowrap"}>
+                    {formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}
                 </td>
                 <td>{this.props.amount.comment ?? ""}</td>
-                <td>
-                    <NonBreakingSpaceText>
-                        <DisabledButton title={this.props.amount.enabled ? "Disable️" : "Enable"}
-                                        onClick={this.switchAmountStatus}>
-                            {this.props.amount.enabled ? "✅️" : "❎"}
-                        </DisabledButton>
-                        <DisabledButton title={"Delete"} onClick={this.deleteAmount}>❌</DisabledButton>
-                    </NonBreakingSpaceText>
+                <td className={"text-center w-auto"}>
+                    <div className={"form-switch"}>
+                        <input type={"checkbox"} role={"switch"} className={"form-check-input"}
+                               checked={this.props.amount.enabled}
+                               onChange={this.switchAmountStatus}/>
+                    </div>
+                </td>
+                <td className={"text-center w-auto"}>
+                    <DisabledButton className={"btn btn-secondary"}
+                                    title={"Delete"}
+                                    onClick={this.deleteAmount}>Delete</DisabledButton>
                 </td>
             </tr>
         );

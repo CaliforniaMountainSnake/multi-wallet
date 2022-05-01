@@ -1,12 +1,5 @@
-@media (prefers-color-scheme: dark) {
-    body {
-        background: black;
-        color: white;
-    }
-}
-
-table.data-table, .data-table th, .data-table td {
-    border: 1px solid;
+body {
+    padding: 0.5em;
 }
 
 .disabled {

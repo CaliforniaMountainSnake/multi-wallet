@@ -20,16 +20,19 @@ export class ExchangeRatesUpdater extends React.Component<{
 
     render(): ReactNode {
         return (
-            <div>
-                Date of the last exchange rates update:
-                <br/>
-                <span>
-                    {(new Date(this.props.ratesLastUpdateTimestamp)).toLocaleString()}
-                </span>
-                <div>
-                    <DisabledButton onClick={this.handleClick}>
-                        🗘 Update exchange rates
-                    </DisabledButton>
+            <div className={"card mb-3"}>
+                <div className={"card-body"}>
+                    <h5 className={"card-title"}>Date of the last exchange rates update:</h5>
+                    <h6 className={"card-subtitle text-muted mb-2"}>
+                        {(new Date(this.props.ratesLastUpdateTimestamp)).toLocaleString()}
+                    </h6>
+                    <div>
+                        <DisabledButton
+                            className={"btn btn-primary"}
+                            onClick={this.handleClick}>
+                            🗘 Update exchange rates
+                        </DisabledButton>
+                    </div>
                 </div>
             </div>
         );

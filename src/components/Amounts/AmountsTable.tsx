@@ -2,7 +2,6 @@ import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {AmountRow} from "./AmountRow";
 import {AmountTotalRow} from "./AmountTotalRow";
-import {NonBreakingSpaceText} from "../Utils/NonBreakingSpaceText";
 
 export class AmountsTable extends React.Component<{
     dbRepository: WalletRepository,
@@ -27,24 +26,21 @@ export class AmountsTable extends React.Component<{
         }
 
         return (
-            <div>
+            <div className={"mb-3"}>
                 <h2>Your wallet</h2>
-                <div style={{overflowX: "auto"}}>
-                    <table className={"data-table"}>
+                <div className={"table-responsive"}>
+                    <table className={"table table-bordered align-middle"}>
                         <thead>
                         <tr>
                             <th>Amount</th>
-                            <th>
-                                <NonBreakingSpaceText>Amount in {selectedCurrencyInfo.unit}</NonBreakingSpaceText>
+                            <th className={"text-nowrap"}>
+                                Amount in {selectedCurrencyInfo.unit}
                             </th>
                             <th>Comment</th>
-                            <th>Actions</th>
+                            <th colSpan={2}>Actions</th>
                         </tr>
                         </thead>
                         <tfoot>
-                        <tr>
-                            <th colSpan={5}>Total:</th>
-                        </tr>
                         <AmountTotalRow dbRepository={this.props.dbRepository} amounts={this.props.amounts}
                                         exchangeRates={this.props.exchangeRates}
                                         selectedCurrencySymbol={this.props.selectedCurrencySymbol}

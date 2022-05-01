@@ -6,8 +6,6 @@ import {AmountsTable} from "./Amounts/AmountsTable";
 import {DisabledButton} from "./Utils/DisabledButton";
 import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
 import {UserRatesTable} from "./UserRates/UserRatesTable";
-import {Simulate} from "react-dom/test-utils";
-import error = Simulate.error;
 
 interface State {
     amounts: Map<number, Amount>,
@@ -112,7 +110,15 @@ export class App extends React.Component<{}, State> {
 
     render() {
         if (!this.state.dbRepository || !this.state.ratesLastUpdateTimestamp || !this.state.selectedCurrencySymbol) {
-            return <span>Initialization. Please, wait...</span>;
+            return (
+                <div className="text-center">
+                    <div className="spinner-border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <br/>
+                    <strong>Loading...</strong>
+                </div>
+            );
         }
         return (
             <React.Fragment>
@@ -131,8 +137,9 @@ export class App extends React.Component<{}, State> {
                               selectedCurrencySymbol={this.state.selectedCurrencySymbol}
                               onAmountsChange={this.onDbDataChanged}
                               onSelectedCurrencyChange={this.onDbDataChanged}/>
-                <br/>
-                <DisabledButton onClick={this.deleteDb}>⚠ Clear DB</DisabledButton>
+                <DisabledButton
+                    className={"btn btn-danger"}
+                    onClick={this.deleteDb}>Clear DB</DisabledButton>
             </React.Fragment>
         );
     }

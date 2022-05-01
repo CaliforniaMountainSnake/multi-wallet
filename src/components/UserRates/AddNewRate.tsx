@@ -67,15 +67,21 @@ export class AddNewRate extends React.Component<{
         return (
             <tr>
                 <td colSpan={2}>
-                    <CurrencySelect id={this.ids.symbol1} exchangeRates={this.props.exchangeRates}
+                    <CurrencySelect id={this.ids.symbol1}
+                                    className={"form-select"}
+                                    exchangeRates={this.props.exchangeRates}
                                     value={this.state.symbol1}
                                     onChange={this.handleInputChange}/><br/>
-                    <CurrencySelect id={this.ids.symbol2} exchangeRates={this.props.exchangeRates}
+                    <CurrencySelect id={this.ids.symbol2}
+                                    className={"form-select"}
+                                    exchangeRates={this.props.exchangeRates}
                                     value={this.state.symbol2}
                                     onChange={this.handleInputChange}/>
                 </td>
-                <td>
-                    <DisabledButton onClick={this.addNewRate}>Add</DisabledButton>
+                <td className={"text-center"}>
+                    <DisabledButton
+                        className={"btn btn-primary"}
+                        onClick={this.addNewRate}>Add</DisabledButton>
                 </td>
             </tr>
         );
