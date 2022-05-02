@@ -2,6 +2,7 @@ import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {DisabledButton} from "../Utils/DisabledButton";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
+import {AmountQuantityTd} from "./AmountQuantityTd";
 
 export class AmountRow extends React.Component<{
     dbRepository: WalletRepository,
@@ -11,7 +12,6 @@ export class AmountRow extends React.Component<{
     selectedCurrencySymbol: string,
     onChange: () => void,
 }> {
-
     private deleteAmount = async (): Promise<void> => {
         if (confirm(this.getAmountDeletionMsg(this.props.amount))) {
             await this.props.dbRepository.deleteAmount(this.props.amountId);
@@ -51,9 +51,9 @@ export class AmountRow extends React.Component<{
 
         return (
             <tr className={this.props.amount.enabled ? undefined : "disabled"}>
-                <td className={"text-nowrap"} title={currencyInfo.name}>
-                    {`${this.props.amount.amount} ${currencyInfo.unit}`}
-                </td>
+                <AmountQuantityTd dbRepository={this.props.dbRepository} amountId={this.props.amountId}
+                                  amount={this.props.amount} amountCurrencyInfo={currencyInfo}
+                                  onChange={this.props.onChange}/>
                 <td className={"text-nowrap"}>
                     {formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}
                 </td>
@@ -66,7 +66,7 @@ export class AmountRow extends React.Component<{
                     </div>
                 </td>
                 <td className={"text-center w-auto"}>
-                    <DisabledButton className={"btn btn-secondary"}
+                    <DisabledButton className={"btn btn-secondary btn-sm"}
                                     title={"Delete"}
                                     onClick={this.deleteAmount}>Delete</DisabledButton>
                 </td>

@@ -59,7 +59,7 @@ export class UserRatesTable extends React.Component<{
                         </td>
                         <td className={"text-center"}>
                             <DisabledButton<number> payload={id}
-                                                    className={"btn btn-secondary"}
+                                                    className={"btn btn-secondary btn-sm"}
                                                     onClick={this.deleteUserRate}>Delete</DisabledButton>
                         </td>
                     </tr>

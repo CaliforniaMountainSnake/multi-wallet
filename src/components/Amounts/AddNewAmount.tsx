@@ -1,6 +1,7 @@
 import React, {ReactNode} from "react";
 import {CurrencySelect} from "../CurrencySelect";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
+import {validator} from "../../validation/Validator";
 
 interface Errors {
     amountError?: Error,
@@ -40,16 +41,14 @@ export class AddNewAmount extends React.Component<{
         const result: Partial<Amount> = {enabled: true};
         const errors: Errors = {};
 
-        result.amount = parseFloat(this.state.amount);
-        if (Number.isNaN(result.amount) || result.amount === 0) {
-            errors.amountError = new Error("Please, enter a valid number!");
-        }
-        result.symbol = this.state.symbol;
-        if (!this.props.exchangeRates.get(result.symbol)) {
-            errors.symbolError = new Error(`Wrong currency symbol: "${result.symbol}"!`);
-        }
-        const trimmedComment = this.state.comment.trim();
-        result.comment = trimmedComment === "" ? undefined : trimmedComment;
+        const [amount, symbol, comment] = await Promise.allSettled([
+            validator.amount(this.state.amount),
+            validator.symbol(this.state.symbol, this.props.exchangeRates),
+            validator.comment(this.state.comment),
+        ]);
+        amount.status === "fulfilled" ? result.amount = amount.value : errors.amountError = amount.reason;
+        symbol.status === "fulfilled" ? result.symbol = symbol.value : errors.amountError = symbol.reason;
+        comment.status === "fulfilled" ? result.comment = comment.value : errors.amountError = comment.reason;
 
         if (errors.amountError || errors.symbolError) {
             this.setState(errors);
