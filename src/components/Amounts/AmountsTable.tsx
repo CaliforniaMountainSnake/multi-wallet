@@ -2,6 +2,7 @@ import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {AmountRow} from "./AmountRow";
 import {AmountTotalRow} from "./AmountTotalRow";
+import {AddNewAmount} from "./AddNewAmount";
 
 export class AmountsTable extends React.Component<{
     dbRepository: WalletRepository,
@@ -26,8 +27,11 @@ export class AmountsTable extends React.Component<{
         }
 
         return (
-            <div className={"mb-3"}>
+            <div>
                 <h2>Your wallet</h2>
+                <AddNewAmount className={"mb-2"}
+                              dbRepository={this.props.dbRepository} exchangeRates={this.props.exchangeRates}
+                              onChange={this.props.onAmountsChange}/>
                 <div className={"table-responsive"}>
                     <table className={"table table-bordered align-middle"}>
                         <thead>

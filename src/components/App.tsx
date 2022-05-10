@@ -1,9 +1,8 @@
 import React from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../repositories/WalletRepository";
 import {ExchangeRatesUpdater} from "./ExchangeRatesUpdater";
-import {AddNewAmount} from "./Amounts/AddNewAmount";
 import {AmountsTable} from "./Amounts/AmountsTable";
-import {DisabledButton} from "./Utils/DisabledButton";
+import {LoadingButton} from "./Utils/LoadingButton";
 import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
 import {UserRatesTable} from "./UserRates/UserRatesTable";
 
@@ -121,26 +120,28 @@ export class App extends React.Component<{}, State> {
             );
         }
         return (
-            <React.Fragment>
+            <div className={"container-lg mt-2 mb-2"}>
                 <h1>Multi-currency Wallet</h1>
                 <ExchangeRatesUpdater dbRepository={this.state.dbRepository}
                                       ratesLastUpdateTimestamp={this.state.ratesLastUpdateTimestamp}
                                       loadFreshExchangeRates={this.loadFreshExchangeRates}
                                       onChange={this.onDbDataChanged}/>
-                <UserRatesTable dbRepository={this.state.dbRepository} exchangeRates={this.state.exchangeRates}/>
-                <AddNewAmount dbRepository={this.state.dbRepository}
-                              exchangeRates={this.state.exchangeRates}
-                              onChange={this.onDbDataChanged}/>
-                <AmountsTable dbRepository={this.state.dbRepository}
-                              amounts={this.state.amounts}
-                              exchangeRates={this.state.exchangeRates}
-                              selectedCurrencySymbol={this.state.selectedCurrencySymbol}
-                              onAmountsChange={this.onDbDataChanged}
-                              onSelectedCurrencyChange={this.onDbDataChanged}/>
-                <DisabledButton
-                    className={"btn btn-danger"}
-                    onClick={this.deleteDb}>Clear DB</DisabledButton>
-            </React.Fragment>
+                <div className={"row"}>
+                    <div className={"col-12 col-lg-4"}>
+                        <UserRatesTable dbRepository={this.state.dbRepository}
+                                        exchangeRates={this.state.exchangeRates}/>
+                    </div>
+                    <div className={"col-12 col-lg-8"}>
+                        <AmountsTable dbRepository={this.state.dbRepository}
+                                      amounts={this.state.amounts}
+                                      exchangeRates={this.state.exchangeRates}
+                                      selectedCurrencySymbol={this.state.selectedCurrencySymbol}
+                                      onAmountsChange={this.onDbDataChanged}
+                                      onSelectedCurrencyChange={this.onDbDataChanged}/>
+                    </div>
+                </div>
+                <LoadingButton variant={"danger"} onClick={this.deleteDb}>Clear DB</LoadingButton>
+            </div>
         );
     }
 }

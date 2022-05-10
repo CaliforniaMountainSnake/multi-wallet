@@ -1,7 +1,7 @@
 import React, {ReactNode} from "react";
 import {AddNewRate} from "./AddNewRate";
 import {CurrencyInfo, UserRate, WalletRepository} from "../../repositories/WalletRepository";
-import {DisabledButton} from "../Utils/DisabledButton";
+import {LoadingButton} from "../Utils/LoadingButton";
 import {formatAmount, getRelativeExchangeRate, showError} from "../../helpers";
 
 interface State {
@@ -58,9 +58,9 @@ export class UserRatesTable extends React.Component<{
                             {" "}{currInfo2.unit}
                         </td>
                         <td className={"text-center"}>
-                            <DisabledButton<number> payload={id}
-                                                    className={"btn btn-secondary btn-sm"}
-                                                    onClick={this.deleteUserRate}>Delete</DisabledButton>
+                            <LoadingButton<number> payload={id}
+                                                   variant={"secondary"} size={"sm"}
+                                                   onClick={this.deleteUserRate}>Delete</LoadingButton>
                         </td>
                     </tr>
                 );
@@ -68,8 +68,11 @@ export class UserRatesTable extends React.Component<{
         }
 
         return (
-            <div className={"mb-3"}>
-                <h2 className={"card-title"}>Favorite exchange rates</h2>
+            <div>
+                <h2 className={"card-title"}>Exchange rates</h2>
+                <AddNewRate className={"mb-2"}
+                            dbRepository={this.props.dbRepository} exchangeRates={this.props.exchangeRates}
+                            onChange={this.onUserRatesChanged}/>
                 <div className={"table-responsive"}>
                     <table className={"table table-bordered align-middle"}>
                         <thead>
@@ -79,11 +82,7 @@ export class UserRatesTable extends React.Component<{
                             <th>Actions</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        <AddNewRate dbRepository={this.props.dbRepository} exchangeRates={this.props.exchangeRates}
-                                    onChange={this.onUserRatesChanged}/>
-                        {ratesRows}
-                        </tbody>
+                        <tbody>{ratesRows}</tbody>
                     </table>
                 </div>
             </div>

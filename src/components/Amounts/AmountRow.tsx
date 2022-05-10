@@ -1,6 +1,6 @@
 import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
-import {DisabledButton} from "../Utils/DisabledButton";
+import {LoadingButton} from "../Utils/LoadingButton";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
 import {AmountQuantityTd} from "./AmountQuantityTd";
 
@@ -57,7 +57,7 @@ export class AmountRow extends React.Component<{
                 <td className={"text-nowrap"}>
                     {formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}
                 </td>
-                <td>{this.props.amount.comment ?? ""}</td>
+                <td style={{whiteSpace: "pre-line"}}>{this.props.amount.comment ?? ""}</td>
                 <td className={"text-center w-auto"}>
                     <div className={"form-switch"}>
                         <input type={"checkbox"} role={"switch"} className={"form-check-input"}
@@ -66,9 +66,8 @@ export class AmountRow extends React.Component<{
                     </div>
                 </td>
                 <td className={"text-center w-auto"}>
-                    <DisabledButton className={"btn btn-secondary btn-sm"}
-                                    title={"Delete"}
-                                    onClick={this.deleteAmount}>Delete</DisabledButton>
+                    <LoadingButton variant={"secondary"} size={"sm"}
+                                   onClick={this.deleteAmount}>Delete</LoadingButton>
                 </td>
             </tr>
         );

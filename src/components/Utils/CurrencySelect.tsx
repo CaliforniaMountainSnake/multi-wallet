@@ -1,11 +1,12 @@
 import React, {ReactNode} from "react";
-import {CurrencyInfo} from "../repositories/WalletRepository";
+import {CurrencyInfo} from "../../repositories/WalletRepository";
+import {Form} from "react-bootstrap";
 
 export class CurrencySelect extends React.Component<{
-    id: string,
     exchangeRates: Map<string, CurrencyInfo>,
-    onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void,
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void,
     value: string,
+    isInvalid?: boolean,
     className?: string,
 }> {
     render(): ReactNode {
@@ -19,10 +20,12 @@ export class CurrencySelect extends React.Component<{
         }
 
         return (
-            <select id={this.props.id} className={this.props.className} disabled={this.props.exchangeRates.size === 0}
-                    value={this.props.value} onChange={this.props.onChange}>
+            <Form.Control as={"select"} className={this.props.className}
+                          isInvalid={this.props.isInvalid}
+                          disabled={this.props.exchangeRates.size === 0}
+                          value={this.props.value} onChange={this.props.onChange}>
                 {options}
-            </select>
+            </Form.Control>
         );
     }
 }

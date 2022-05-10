@@ -1,6 +1,7 @@
 import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {validator} from "../../validation/Validator";
+import {Button} from "react-bootstrap";
 
 interface State {
     amountFormData?: string,
@@ -71,7 +72,8 @@ export class AmountQuantityTd extends React.Component<{
                                 onClick={this.showQuantity}>
                             Cancel
                         </button>
-                        <button type={"submit"} className={"btn btn-sm btn-warning mb-2"}>Update</button>
+                        <Button type={"submit"} className={"btn btn-sm btn-warning mb-2"}>Update</Button>
+                        {/*<button type={"submit"} className={"btn btn-sm btn-warning mb-2"}>Update</button>*/}
                     </form>
                 </td>
             );

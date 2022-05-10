@@ -1,5 +1,5 @@
 import React, {ReactNode} from "react";
-import {CurrencySelect} from "../CurrencySelect";
+import {CurrencySelect} from "../Utils/CurrencySelect";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
 
@@ -10,7 +10,7 @@ export class AmountTotalRow extends React.Component<{
     selectedCurrencySymbol: string,
     onSelectedCurrencyChange: () => void,
 }> {
-    private updateSelectedCurrency = (event: React.ChangeEvent<HTMLSelectElement>): void => {
+    private updateSelectedCurrency = (event: React.ChangeEvent<HTMLInputElement>): void => {
         this.props.dbRepository.setConfig({
             key: "selected_currency",
             value: event.target.value
@@ -43,8 +43,7 @@ export class AmountTotalRow extends React.Component<{
                     {formatAmount(this.calculateTotalSum())} {selectedCurrencyInfo.unit}
                 </td>
                 <td colSpan={3}>
-                    <CurrencySelect id={"selected_currency"}
-                                    className={"form-select"}
+                    <CurrencySelect className={"form-select"}
                                     exchangeRates={this.props.exchangeRates}
                                     value={selectedCurrencyInfo.symbol} onChange={this.updateSelectedCurrency}/>
                 </td>
