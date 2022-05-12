@@ -1,12 +1,15 @@
-import React from "react";
+import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../repositories/WalletRepository";
 import {ExchangeRatesUpdater} from "./ExchangeRatesUpdater";
 import {AmountsTable} from "./Amounts/AmountsTable";
 import {LoadingButton} from "./Utils/LoadingButton";
 import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
 import {UserRatesTable} from "./UserRates/UserRatesTable";
+import {ThemeLoader, ThemeName} from "./Themes/ThemeLoader";
+import {Button} from "react-bootstrap";
 
 interface State {
+    theme: ThemeName,
     amounts: Map<number, Amount>,
     exchangeRates: Map<string, CurrencyInfo>,
     dbRepository?: WalletRepository,
@@ -14,11 +17,12 @@ interface State {
     selectedCurrencySymbol?: string,
 }
 
-export class App extends React.Component<{}, State> {
+export default class App extends React.Component<{}, State> {
     private defaultCurrency = "usd";
     private coingeckoRepository = new CoingeckoRepository();
 
     state: State = {
+        theme: "material",
         amounts: new Map(),
         exchangeRates: new Map(),
     };
@@ -60,6 +64,7 @@ export class App extends React.Component<{}, State> {
             dbRepository.getConfig("selected_currency"),
         ]);
         return {
+            theme: "material",
             dbRepository: dbRepository,
             amounts: amounts,
             exchangeRates: rates,
@@ -107,40 +112,59 @@ export class App extends React.Component<{}, State> {
         }
     }
 
+    private changeTheme = () => {
+        this.setState({theme: "slate"});
+    };
+
     render() {
         if (!this.state.dbRepository || !this.state.ratesLastUpdateTimestamp || !this.state.selectedCurrencySymbol) {
-            return (
-                <div className="text-center">
-                    <div className="spinner-border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <br/>
-                    <strong>Loading...</strong>
-                </div>
-            );
+            return (<DbLoadingFallback/>);
         }
         return (
-            <div className={"container-lg mt-2 mb-2"}>
-                <h1>Multi-currency Wallet</h1>
-                <ExchangeRatesUpdater dbRepository={this.state.dbRepository}
-                                      ratesLastUpdateTimestamp={this.state.ratesLastUpdateTimestamp}
-                                      loadFreshExchangeRates={this.loadFreshExchangeRates}
-                                      onChange={this.onDbDataChanged}/>
-                <div className={"row"}>
-                    <div className={"col-12 col-lg-4"}>
-                        <UserRatesTable dbRepository={this.state.dbRepository}
-                                        exchangeRates={this.state.exchangeRates}/>
+            <ThemeLoader lightTheme={"material"} darkTheme={"slate"} fallback={<ThemeLoadingFallback/>}>
+                <div className={"container-lg mt-2 mb-2"}>
+                    <h1>Multi-currency Wallet</h1>
+                    <ExchangeRatesUpdater dbRepository={this.state.dbRepository}
+                                          ratesLastUpdateTimestamp={this.state.ratesLastUpdateTimestamp}
+                                          loadFreshExchangeRates={this.loadFreshExchangeRates}
+                                          onChange={this.onDbDataChanged}/>
+                    <div className={"row"}>
+                        <div className={"col-12 col-lg-4"}>
+                            <UserRatesTable dbRepository={this.state.dbRepository}
+                                            exchangeRates={this.state.exchangeRates}/>
+                        </div>
+                        <div className={"col-12 col-lg-8"}>
+                            <AmountsTable dbRepository={this.state.dbRepository}
+                                          amounts={this.state.amounts}
+                                          exchangeRates={this.state.exchangeRates}
+                                          selectedCurrencySymbol={this.state.selectedCurrencySymbol}
+                                          onAmountsChange={this.onDbDataChanged}
+                                          onSelectedCurrencyChange={this.onDbDataChanged}/>
+                        </div>
                     </div>
-                    <div className={"col-12 col-lg-8"}>
-                        <AmountsTable dbRepository={this.state.dbRepository}
-                                      amounts={this.state.amounts}
-                                      exchangeRates={this.state.exchangeRates}
-                                      selectedCurrencySymbol={this.state.selectedCurrencySymbol}
-                                      onAmountsChange={this.onDbDataChanged}
-                                      onSelectedCurrencyChange={this.onDbDataChanged}/>
-                    </div>
+                    <LoadingButton variant={"danger"} onClick={this.deleteDb}>⚠ Clear DB</LoadingButton>
+                    <Button variant={"info"} onClick={this.changeTheme}>Change theme</Button>
                 </div>
-                <LoadingButton variant={"danger"} onClick={this.deleteDb}>Clear DB</LoadingButton>
+            </ThemeLoader>
+        );
+    }
+}
+
+class DbLoadingFallback extends React.Component {
+    render(): ReactNode {
+        return (
+            <div>
+                Database loading...
+            </div>
+        );
+    }
+}
+
+class ThemeLoadingFallback extends React.Component {
+    render(): ReactNode {
+        return (
+            <div>
+                Theme loading...
             </div>
         );
     }

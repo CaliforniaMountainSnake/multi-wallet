@@ -73,7 +73,6 @@ export class AmountQuantityTd extends React.Component<{
                             Cancel
                         </button>
                         <Button type={"submit"} className={"btn btn-sm btn-warning mb-2"}>Update</Button>
-                        {/*<button type={"submit"} className={"btn btn-sm btn-warning mb-2"}>Update</button>*/}
                     </form>
                 </td>
             );

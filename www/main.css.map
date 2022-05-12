@@ -1,0 +1,1 @@
+{"version":3,"file":"main.css","mappings":"AAAA;IACI,YAAY;AAChB","sources":["webpack://finance-app/./src/styles/style.css"],"sourcesContent":[".disabled {\n    opacity: 0.3;\n}\n"],"names":[],"sourceRoot":""}
