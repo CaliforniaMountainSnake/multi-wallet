@@ -5,11 +5,9 @@ import {AmountsTable} from "./Amounts/AmountsTable";
 import {LoadingButton} from "./Utils/LoadingButton";
 import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
 import {UserRatesTable} from "./UserRates/UserRatesTable";
-import {ThemeLoader, ThemeName} from "./Themes/ThemeLoader";
-import {Button} from "react-bootstrap";
+import {ThemeLoader} from "./Themes/ThemeLoader";
 
 interface State {
-    theme: ThemeName,
     amounts: Map<number, Amount>,
     exchangeRates: Map<string, CurrencyInfo>,
     dbRepository?: WalletRepository,
@@ -22,7 +20,6 @@ export default class App extends React.Component<{}, State> {
     private coingeckoRepository = new CoingeckoRepository();
 
     state: State = {
-        theme: "material",
         amounts: new Map(),
         exchangeRates: new Map(),
     };
@@ -64,7 +61,6 @@ export default class App extends React.Component<{}, State> {
             dbRepository.getConfig("selected_currency"),
         ]);
         return {
-            theme: "material",
             dbRepository: dbRepository,
             amounts: amounts,
             exchangeRates: rates,
@@ -112,10 +108,6 @@ export default class App extends React.Component<{}, State> {
         }
     }
 
-    private changeTheme = () => {
-        this.setState({theme: "slate"});
-    };
-
     render() {
         if (!this.state.dbRepository || !this.state.ratesLastUpdateTimestamp || !this.state.selectedCurrencySymbol) {
             return (<DbLoadingFallback/>);
@@ -143,7 +135,6 @@ export default class App extends React.Component<{}, State> {
                         </div>
                     </div>
                     <LoadingButton variant={"danger"} onClick={this.deleteDb}>⚠ Clear DB</LoadingButton>
-                    <Button variant={"info"} onClick={this.changeTheme}>Change theme</Button>
                 </div>
             </ThemeLoader>
         );
