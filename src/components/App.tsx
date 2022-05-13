@@ -121,7 +121,7 @@ export default class App extends React.Component<{}, State> {
             return (<DbLoadingFallback/>);
         }
         return (
-            <ThemeLoader lightTheme={"material"} darkTheme={"slate"} fallback={<ThemeLoadingFallback/>}>
+            <ThemeLoader lightTheme={"default_bootstrap"} darkTheme={"solar"} fallback={<ThemeLoadingFallback/>}>
                 <div className={"container-lg mt-2 mb-2"}>
                     <h1>Multi-currency Wallet</h1>
                     <ExchangeRatesUpdater dbRepository={this.state.dbRepository}

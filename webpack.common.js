@@ -1,6 +1,5 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
     entry: "./src/index.tsx",
@@ -18,28 +17,32 @@ module.exports = {
             {
                 test: /\.m?jsx?$/,
                 exclude: /node_modules/,
-                use: {loader: "babel-loader"}
+                use: {loader: "babel-loader"},
             },
             {
                 test: /\.tsx?$/,
                 exclude: /node_modules/,
-                use: {loader: "ts-loader"}
+                use: {loader: "ts-loader"},
             },
             {
                 test: /\.css$/i,
                 // use: ["style-loader", "css-loader", "postcss-loader"],
-                // use: ["style-loader", "css-loader"],
-                use: [MiniCssExtractPlugin.loader, "css-loader"],
+                use: ["style-loader", "css-loader"],
+                resourceQuery: {not: [/raw/]},
             },
+            {
+                // @see https://webpack.js.org/guides/asset-modules/#source-assets
+                resourceQuery: /raw/,
+                type: "asset/source",
+            }
         ]
     },
     optimization: {
         splitChunks: {
-            chunks: "all",
+            // chunks: "all",
         },
     },
     plugins: [
         new HtmlWebpackPlugin(),
-        new MiniCssExtractPlugin(),
     ],
 };

@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunkfinance_app=self.webpackChunkfinance_app||[]).push([[602],{602:function(n,e,a){a.r(e),a.d(e,{default:function(){return p}});var c=a(294);class p extends c.Component{render(){}}}}]);
-//# sourceMappingURL=602.chunk-bundle.js.map
