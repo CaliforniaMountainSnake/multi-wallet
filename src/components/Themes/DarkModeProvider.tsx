@@ -11,7 +11,7 @@ type UndefinedIfEmptyObject<Obj extends Record<PropertyKey, unknown>> =
 
 export class DarkModeProvider<T extends DarkModeAware> extends React.Component<{
     child: React.ComponentType<T>,
-    childProps?: UndefinedIfEmptyObject<Omit<T, keyof DarkModeAware>>,
+    childProps: UndefinedIfEmptyObject<Omit<T, keyof DarkModeAware>>,
 }, DarkModeAware> {
     private darkModeQuery: MediaQueryList = window.matchMedia("(prefers-color-scheme: dark)");
     state: DarkModeAware = {
