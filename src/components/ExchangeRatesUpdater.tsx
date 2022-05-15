@@ -29,7 +29,7 @@ export class ExchangeRatesUpdater extends React.Component<{
                         </h6>
                     </div>
                     <div className={"col-12 col-md-4 d-flex justify-content-md-end"}>
-                        <LoadingButton variant={"primary"} onClick={this.handleClick}>
+                        <LoadingButton buttonProps={{variant: "primary"}} onClick={this.handleClick}>
                             🗘 Update exchange rates
                         </LoadingButton>
                     </div>

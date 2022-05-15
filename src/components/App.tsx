@@ -172,7 +172,7 @@ export default class App extends React.Component<Props, State> {
                                           onSelectedCurrencyChange={this.onDbDataChanged}/>
                         </div>
                     </div>
-                    <LoadingButton variant={"danger"} onClick={this.deleteDb}>⚠ Clear DB</LoadingButton>
+                    <LoadingButton buttonProps={{variant: "danger"}} onClick={this.deleteDb}>⚠ Clear DB</LoadingButton>
                 </div>
             </ThemeLoader>
         );

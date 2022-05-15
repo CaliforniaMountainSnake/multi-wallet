@@ -2,7 +2,7 @@ import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {LoadingButton} from "../Utils/LoadingButton";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
-import {AmountQuantityTd} from "./AmountQuantityTd";
+import {PutAmount} from "./PutAmount";
 
 export class AmountRow extends React.Component<{
     dbRepository: WalletRepository,
@@ -51,22 +51,31 @@ export class AmountRow extends React.Component<{
 
         return (
             <tr className={this.props.amount.enabled ? undefined : "disabled"}>
-                <AmountQuantityTd dbRepository={this.props.dbRepository} amountId={this.props.amountId}
-                                  amount={this.props.amount} amountCurrencyInfo={currencyInfo}
-                                  onChange={this.props.onChange}/>
+                <td className={"text-nowrap"} title={currencyInfo.name}>
+                    {`${this.props.amount.amount} ${currencyInfo.unit}`}
+                </td>
                 <td className={"text-nowrap"}>
                     {formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}
                 </td>
                 <td style={{whiteSpace: "pre-line"}}>{this.props.amount.comment ?? ""}</td>
-                <td className={"text-center w-auto"}>
+                <td className={"text-center"}>
                     <div className={"form-switch"}>
                         <input type={"checkbox"} role={"switch"} className={"form-check-input"}
                                checked={this.props.amount.enabled}
                                onChange={this.switchAmountStatus}/>
                     </div>
                 </td>
-                <td className={"text-center w-auto"}>
-                    <LoadingButton variant={"secondary"} size={"sm"}
+                <td className={"text-center"}>
+                    <PutAmount buttonProps={{variant: "secondary", size: "sm"}}
+                               buttonText={{main: "Edit", modal: "Update"}}
+                               flushOnHide={true}
+                               dbRepository={this.props.dbRepository} exchangeRates={this.props.exchangeRates}
+                               initialAmount={this.props.amount}
+                               initialAmountId={this.props.amountId}
+                               onChange={this.props.onChange}/>
+                </td>
+                <td className={"text-center"}>
+                    <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}
                                    onClick={this.deleteAmount}>Delete</LoadingButton>
                 </td>
             </tr>

@@ -1,6 +1,5 @@
 import React, {ReactNode} from "react";
 import {Button, ButtonProps} from "react-bootstrap";
-import {ButtonVariant} from "react-bootstrap/types";
 
 interface State {
     loading: boolean;
@@ -9,10 +8,8 @@ interface State {
 export class LoadingButton<T> extends React.Component<{
     children: ReactNode,
     onClick: (payload?: T) => Promise<void>,
-    variant: ButtonVariant,
-    size?: ButtonProps["size"]
+    buttonProps: Omit<ButtonProps, "onClick" | "children" | "disabled">
     payload?: T,
-    className?: string,
 }, State> {
     state: State = {
         loading: false
@@ -31,8 +28,11 @@ export class LoadingButton<T> extends React.Component<{
     };
 
     render(): ReactNode {
-        return (<Button variant={this.props.variant} size={this.props.size}
-                        className={this.props.className} disabled={this.state.loading}
-                        onClick={this._handleClick}>{this.props.children}</Button>);
+        const systemProps: ButtonProps = {
+            children: this.props.children,
+            onClick: this._handleClick,
+            disabled: this.state.loading,
+        };
+        return React.createElement(Button, Object.assign(systemProps, this.props.buttonProps));
     }
 }

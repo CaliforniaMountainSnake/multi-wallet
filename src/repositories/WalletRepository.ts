@@ -68,10 +68,6 @@ export class WalletRepository extends BasicIndexedDBRepository {
         }, "readonly");
     }
 
-    async getAmount(key: number): Promise<Amount> {
-        return await this.getByKeyOfThrowError(this.storeNames.amounts, key);
-    }
-
     async putAmount(amount: Amount, key?: number): Promise<IDBValidKey> {
         return await this.transaction(async transaction => {
             const store = transaction.objectStore(this.storeNames.amounts);

@@ -40,8 +40,26 @@ async function symbolValidator(symbol: string, exchangeRates: Map<string, Curren
     return symbol;
 }
 
+/**
+ * Make all fields of the object optional Errors with a name in the form "xxxError".
+ */
 export type ValidationErrors<T> = {
     [P in keyof T as `${string & P}Error`]?: Error
+};
+
+/**
+ * Make all fields of the object optional with a name in the form "initialXXX".
+ */
+export type InitialData<T> = {
+    [P in keyof T as `initial${Capitalize<string & P>}`]?: T[P]
+};
+
+/**
+ * Make all fields of the object required,
+ * and make all fields strings except for fields from the second param.
+ */
+export type RequireStrings<T, Keep extends keyof T = never> = {
+    [P in keyof T]-?: P extends Keep ? T[P] : string
 };
 
 type PromisesObject<T> = {

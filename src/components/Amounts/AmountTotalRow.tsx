@@ -42,7 +42,7 @@ export class AmountTotalRow extends React.Component<{
                 <td className={"text-nowrap"}>
                     {formatAmount(this.calculateTotalSum())} {selectedCurrencyInfo.unit}
                 </td>
-                <td colSpan={3}>
+                <td colSpan={4}>
                     <CurrencySelect className={"form-select"}
                                     exchangeRates={this.props.exchangeRates}
                                     value={selectedCurrencyInfo.symbol} onChange={this.updateSelectedCurrency}/>

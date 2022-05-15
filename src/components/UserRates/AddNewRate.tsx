@@ -1,16 +1,13 @@
 import React, {ReactNode} from "react";
-import {CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
+import {CurrencyInfo, UserRate, WalletRepository} from "../../repositories/WalletRepository";
 import {CurrencySelect} from "../Utils/CurrencySelect";
 import {Button, Form, Modal} from "react-bootstrap";
-import {validate, ValidationErrors, validator} from "../../validation/Validator";
+import {RequireStrings, validate, ValidationErrors, validator} from "../../validation/Validator";
 import {HasModal, ModalState} from "../interfaces/HasModal";
 
-interface FormData {
-    symbol1: string,
-    symbol2: string,
-}
+type FormData = RequireStrings<UserRate>
 
-type FormErrors = ValidationErrors<FormData> & ValidationErrors<{ symbols: never }>
+type FormErrors = ValidationErrors<FormData & { symbols: never }>
 
 interface State extends ModalState, FormData, FormErrors {
 }

@@ -15,7 +15,7 @@ root.render(
             <DarkModeProvider child={App} childProps={{
                 defaultCurrency: "usd",
                 defaultLightTheme: "default_bootstrap",
-                defaultDarkTheme: "slate",
+                defaultDarkTheme: "darkly",
             }}/>
         </HelmetProvider>
     </TopLevelErrorBoundary>

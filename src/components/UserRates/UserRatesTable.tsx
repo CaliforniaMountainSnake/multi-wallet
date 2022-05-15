@@ -59,7 +59,7 @@ export class UserRatesTable extends React.Component<{
                         </td>
                         <td className={"text-center"}>
                             <LoadingButton<number> payload={id}
-                                                   variant={"secondary"} size={"sm"}
+                                                   buttonProps={{variant: "secondary", size: "sm"}}
                                                    onClick={this.deleteUserRate}>Delete</LoadingButton>
                         </td>
                     </tr>

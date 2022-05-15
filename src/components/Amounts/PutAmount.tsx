@@ -1,27 +1,33 @@
 import React, {ReactNode} from "react";
 import {CurrencySelect} from "../Utils/CurrencySelect";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
-import {validate, ValidationErrors, validator} from "../../validation/Validator";
+import {InitialData, RequireStrings, validate, ValidationErrors, validator} from "../../validation/Validator";
 import {Button, Form, Modal} from "react-bootstrap";
 import {HasModal, ModalState} from "../interfaces/HasModal";
+import {ButtonProps} from "react-bootstrap/Button";
 
-interface FormData {
-    amount: string,
-    symbol: string,
-    comment: string,
-}
+type FormData = RequireStrings<Amount, "enabled">
 
 type FormErrors = ValidationErrors<FormData>
+
+type InitialFormData = InitialData<{
+    amount: Amount,
+    amountId: number
+}>
+
+interface Props extends InitialFormData {
+    dbRepository: WalletRepository,
+    exchangeRates: Map<string, CurrencyInfo>,
+    onChange: () => void,
+    buttonText: { main: string, modal: string },
+    buttonProps: Omit<ButtonProps, "onClick" | "children">
+    flushOnHide: boolean,
+}
 
 interface State extends ModalState, FormData, FormErrors {
 }
 
-export class AddNewAmount extends React.Component<{
-    dbRepository: WalletRepository,
-    exchangeRates: Map<string, CurrencyInfo>,
-    onChange: () => void,
-    className?: string,
-}, State> implements HasModal {
+export class PutAmount extends React.Component<Props, State> implements HasModal {
     private idPrefix = `${this.constructor.name}_`;
     private ids = {
         amount: `${this.idPrefix}amount`,
@@ -31,17 +37,19 @@ export class AddNewAmount extends React.Component<{
 
     private initialState: State = {
         isModalShown: false,
-        amount: "",
-        symbol: this.props.exchangeRates.keys().next().value,
-        comment: "",
+        amount: this.props.initialAmount?.amount.toString() ?? "",
+        symbol: this.props.initialAmount?.symbol ?? this.props.exchangeRates.keys().next().value,
+        comment: this.props.initialAmount?.comment ?? "",
+        enabled: this.props.initialAmount?.enabled ?? true,
         amountError: undefined,
         symbolError: undefined,
         commentError: undefined,
+        enabledError: undefined,
     };
     state: State = this.initialState;
 
     hideModal = () => {
-        this.setState({isModalShown: false});
+        this.setState(this.props.flushOnHide ? this.initialState : {isModalShown: false});
     };
 
     showModal = () => {
@@ -56,8 +64,8 @@ export class AddNewAmount extends React.Component<{
             comment: validator.comment(this.state.comment),
         }, validatedData => {
             (async () => {
-                const amount: Amount = Object.assign({}, validatedData, {enabled: true});
-                const addedRowKey = await this.props.dbRepository.putAmount(amount);
+                const amount: Amount = Object.assign({}, validatedData, {enabled: this.state.enabled});
+                const addedRowKey = await this.props.dbRepository.putAmount(amount, this.props.initialAmountId);
                 this.setState(this.initialState);
                 this.props.onChange();
                 console.debug("Added amount with key:", addedRowKey);
@@ -129,11 +137,14 @@ export class AddNewAmount extends React.Component<{
                                     className={"me-2"}
                                     onClick={this.hideModal}>Cancel</Button>
                             <Button type="submit" variant={"primary"}
-                                    disabled={this.props.exchangeRates.size === 0}>Add</Button>
+                                    disabled={this.props.exchangeRates.size === 0}>{this.props.buttonText.modal}</Button>
                         </Form>
                     </Modal.Body>
                 </Modal>
-                <Button variant="primary" className={this.props.className} onClick={this.showModal}>Add amount</Button>
+                {React.createElement(Button, Object.assign({
+                    children: this.props.buttonText.main,
+                    onClick: this.showModal,
+                }, this.props.buttonProps))}
             </React.Fragment>
         );
     }
