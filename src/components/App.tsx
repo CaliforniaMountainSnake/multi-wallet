@@ -6,6 +6,16 @@ import {LoadingButton} from "./Utils/LoadingButton";
 import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
 import {UserRatesTable} from "./UserRates/UserRatesTable";
 import {ThemeLoader} from "./Themes/ThemeLoader";
+import {AppNavbar} from "./AppNavbar";
+import {ThemeConfigurator} from "./Themes/ThemeConfigurator";
+import {ThemeName} from "./Themes/InstalledThemes";
+import {DarkModeAware} from "./Themes/DarkModeProvider";
+
+interface Props extends DarkModeAware {
+    defaultCurrency: "usd";
+    defaultLightTheme: ThemeName;
+    defaultDarkTheme: ThemeName;
+}
 
 interface State {
     amounts: Map<number, Amount>,
@@ -13,16 +23,18 @@ interface State {
     dbRepository?: WalletRepository,
     ratesLastUpdateTimestamp?: number,
     selectedCurrencySymbol?: string,
+    lightTheme?: ThemeName,
+    darkTheme?: ThemeName,
 }
 
-export default class App extends React.Component<{}, State> {
-    private defaultCurrency = "usd";
+export default class App extends React.Component<Props, State> {
     private coingeckoRepository = new CoingeckoRepository();
 
-    state: State = {
+    private initialState: State = {
         amounts: new Map(),
         exchangeRates: new Map(),
     };
+    state: State = this.initialState;
 
     private deleteDb = async (): Promise<void> => {
         const dbRepository = this.state.dbRepository!;
@@ -54,11 +66,13 @@ export default class App extends React.Component<{}, State> {
     };
 
     private async loadDbData(dbRepository: WalletRepository): Promise<State> {
-        const [amounts, rates, timestamp, selectedCurrency] = await Promise.all([
+        const [amounts, rates, timestamp, selectedCurrency, lightTheme, darkTheme] = await Promise.all([
             dbRepository.getAmounts(),
             dbRepository.getExchangeRates(),
             dbRepository.getConfig("last_update_timestamp"),
             dbRepository.getConfig("selected_currency"),
+            dbRepository.getConfig("light_theme"),
+            dbRepository.getConfig("dark_theme"),
         ]);
         return {
             dbRepository: dbRepository,
@@ -66,6 +80,8 @@ export default class App extends React.Component<{}, State> {
             exchangeRates: rates,
             ratesLastUpdateTimestamp: timestamp,
             selectedCurrencySymbol: selectedCurrency,
+            lightTheme: lightTheme,
+            darkTheme: darkTheme,
         };
     }
 
@@ -82,10 +98,22 @@ export default class App extends React.Component<{}, State> {
         if (data.exchangeRates.size === 0) {
             await this.loadFreshExchangeRates(dbRepository);
         }
-        if (!data.selectedCurrencySymbol) {
+        if (data.selectedCurrencySymbol === undefined) {
             await dbRepository.setConfig({
                 key: "selected_currency",
-                value: this.defaultCurrency
+                value: this.props.defaultCurrency
+            });
+        }
+        if (data.lightTheme === undefined) {
+            await dbRepository.setConfig({
+                key: "light_theme",
+                value: this.props.defaultLightTheme
+            });
+        }
+        if (data.darkTheme === undefined) {
+            await dbRepository.setConfig({
+                key: "dark_theme",
+                value: this.props.defaultDarkTheme
             });
         }
 
@@ -109,13 +137,23 @@ export default class App extends React.Component<{}, State> {
     }
 
     render() {
-        if (!this.state.dbRepository || !this.state.ratesLastUpdateTimestamp || !this.state.selectedCurrencySymbol) {
+        // @TODO: "Object.values(this.state).every(item => item !== undefined)" can be useful here,
+        // @TODO: but it looks like TypeScript type narrowing doesn't recognize it.
+        if (this.state.dbRepository === undefined || this.state.ratesLastUpdateTimestamp === undefined
+            || this.state.selectedCurrencySymbol === undefined || this.state.lightTheme === undefined
+            || this.state.darkTheme === undefined) {
             return (<DbLoadingFallback/>);
         }
         return (
-            <ThemeLoader lightTheme={"default_bootstrap"} darkTheme={"solar"} fallback={<ThemeLoadingFallback/>}>
+            <ThemeLoader theme={this.props.isDarkMode ? this.state.darkTheme : this.state.lightTheme}
+                         fallback={<ThemeLoadingFallback/>}>
+                <AppNavbar>
+                    <ThemeConfigurator dbRepository={this.state.dbRepository} onChange={this.onDbDataChanged}
+                                       isDarkMode={this.props.isDarkMode}
+                                       installedLightTheme={this.state.lightTheme}
+                                       installedDarkTheme={this.state.darkTheme}/>
+                </AppNavbar>
                 <div className={"container-lg mt-2 mb-2"}>
-                    <h1>Multi-currency Wallet</h1>
                     <ExchangeRatesUpdater dbRepository={this.state.dbRepository}
                                           ratesLastUpdateTimestamp={this.state.ratesLastUpdateTimestamp}
                                           loadFreshExchangeRates={this.loadFreshExchangeRates}

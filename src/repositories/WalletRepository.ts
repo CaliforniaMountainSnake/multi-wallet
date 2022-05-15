@@ -1,5 +1,6 @@
 import {BtcRate} from "./CoingeckoRepository";
 import {BasicIndexedDBRepository} from "./BasicIndexedDBRepository";
+import {ThemeName} from "../components/Themes/InstalledThemes";
 
 export class WalletRepository extends BasicIndexedDBRepository {
     private storeNames = {
@@ -156,6 +157,12 @@ export type Config = {
 } | {
     key: "selected_currency",
     value: string,
+} | {
+    key: "light_theme",
+    value: ThemeName,
+} | {
+    key: "dark_theme",
+    value: ThemeName,
 }
 
 export type ConfigKey = Config["key"];
