@@ -80,7 +80,11 @@ export class AmountRow extends React.Component<{
                     </div>
                 </td>
                 <td className={"text-center"}>
-                    <PutAmount modalTitle={"Edit amount"}
+                    {/* Use key to force recreate PutAmount component */}
+                    {/* to avoid syncing the state when props are changed.*/}
+                    {/* @see https://reactjs.org/blog/2018/06/07/you-probably-dont-need-derived-state.html#recommendation-fully-uncontrolled-component-with-a-key */}
+                    <PutAmount key={[this.props.amountId, JSON.stringify(this.props.amount)].join()}
+                               modalTitle={"Edit amount"}
                                buttonText={{
                                    main: (<span className={"icon"} dangerouslySetInnerHTML={{__html: editIcon}}/>),
                                    modal: "Update",
