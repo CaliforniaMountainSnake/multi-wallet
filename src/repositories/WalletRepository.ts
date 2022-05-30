@@ -1,6 +1,8 @@
 import {BtcRate} from "./CoingeckoRepository";
 import {BasicIndexedDBRepository} from "./BasicIndexedDBRepository";
 import {ThemeName} from "../components/Themes/InstalledThemes";
+import {DoublyLinkedListRepository, Node} from "./DoublyLinkedListRepository";
+import {IndexedDbNodeStore} from "./IndexedDbNodeStore";
 
 export class WalletRepository extends BasicIndexedDBRepository {
     private storeNames = {
@@ -9,39 +11,45 @@ export class WalletRepository extends BasicIndexedDBRepository {
         userRates: "user_exchange_rates",
         amounts: "amounts",
     };
+    private readonly amountNodeStore = new IndexedDbNodeStore<Amount>(this, this.storeNames.amounts);
+    public readonly amountRepository = new DoublyLinkedListRepository<Amount>(this.amountNodeStore);
 
     get dbName(): string {
         return "multi-wallet-app";
     }
 
     get dbVersion(): number {
-        return 5;
+        return 6;
     }
 
     getMigrations(): Map<number, (db: IDBDatabase, transaction: IDBTransaction) => Promise<void>> {
-        const map = new Map<number, (db: IDBDatabase, transaction: IDBTransaction) => Promise<void>>();
-        map.set(1, async (db: IDBDatabase) => {
-            db.createObjectStore(this.storeNames.configs, {keyPath: "key"});
-        });
-        map.set(2, async (db: IDBDatabase) => {
-            db.createObjectStore(this.storeNames.exchangeRates, {keyPath: "symbol"});
-        });
-        map.set(3, async (db: IDBDatabase) => {
-            db.createObjectStore(this.storeNames.amounts, {autoIncrement: true});
-        });
-        map.set(4, async (db: IDBDatabase) => {
-            db.createObjectStore(this.storeNames.userRates, {autoIncrement: true});
-        });
-        map.set(5, async (db: IDBDatabase, transaction: IDBTransaction) => {
-            // Add a new "enabled" property to all amounts.
-            const store = transaction.objectStore(this.storeNames.amounts);
-            const amounts = await this.promiseCursorRequest<number, Amount>(store.openCursor());
-            for (const [key, amount] of amounts) {
-                amount.enabled = true;
-                store.put(amount, key);
-            }
-        });
-        return map;
+        return new Map([
+            [1, async (db: IDBDatabase) => {
+                db.createObjectStore(this.storeNames.configs, {keyPath: "key"});
+            }],
+            [2, async (db: IDBDatabase) => {
+                db.createObjectStore(this.storeNames.exchangeRates, {keyPath: "symbol"});
+            }],
+            [3, async (db: IDBDatabase) => {
+                db.createObjectStore(this.storeNames.amounts, {autoIncrement: true});
+            }],
+            [4, async (db: IDBDatabase) => {
+                db.createObjectStore(this.storeNames.userRates, {autoIncrement: true});
+            }],
+            [5, async (db: IDBDatabase, transaction: IDBTransaction) => {
+                // Add a new "enabled" property to all amounts.
+                const store = transaction.objectStore(this.storeNames.amounts);
+                const amounts = await this.promiseCursorRequest<number, Amount>(store.openCursor());
+                for (const [key, amount] of amounts) {
+                    amount.enabled = true;
+                    store.put(amount, key);
+                }
+            }],
+            [6, async (db: IDBDatabase, transaction: IDBTransaction) => {
+                // Transform the store to a doubly linked list to have ability to change row order in O(1) time.
+                await this.amountNodeStore.migrateStoreToDoublyLinkedList(transaction, this.amountRepository);
+            }],
+        ]);
     }
 
     /**
@@ -59,24 +67,6 @@ export class WalletRepository extends BasicIndexedDBRepository {
             const store = transaction.objectStore(this.storeNames.configs);
             await this.promiseRequest(store.put(conf));
         });
-    }
-
-    async getAmounts(): Promise<Map<number, Amount>> {
-        return await this.transaction(async transaction => {
-            const store = transaction.objectStore(this.storeNames.amounts);
-            return await this.promiseCursorRequest<number, Amount>(store.openCursor());
-        }, "readonly");
-    }
-
-    async putAmount(amount: Amount, key?: number): Promise<IDBValidKey> {
-        return await this.transaction(async transaction => {
-            const store = transaction.objectStore(this.storeNames.amounts);
-            return await this.promiseRequest(store.put(amount, key));
-        });
-    }
-
-    async deleteAmount(key: number): Promise<void> {
-        return await this.deleteByKey(this.storeNames.amounts, key);
     }
 
     async getUserRates(): Promise<Map<number, UserRate>> {
@@ -131,7 +121,7 @@ export class WalletRepository extends BasicIndexedDBRepository {
     }
 }
 
-export interface Amount {
+export interface Amount extends Node {
     amount: number,
     symbol: string,
     enabled: boolean,

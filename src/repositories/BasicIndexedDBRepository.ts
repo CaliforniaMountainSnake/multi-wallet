@@ -41,6 +41,48 @@ export abstract class BasicIndexedDBRepository {
         });
     }
 
+    async transaction<V>(
+        body: (transaction: IDBTransaction) => Promise<V>,
+        mode: "readonly" | "readwrite" = "readwrite"
+    ): Promise<V> {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(this.db.objectStoreNames, mode);
+            const transactionResultPromise = body(transaction);
+
+            transaction.onabort = event => reject((event.target as IDBTransaction).error);
+            transaction.oncomplete = () => {
+                transactionResultPromise
+                    .then(result => resolve(result))
+                    .catch(error => reject(error));
+            };
+        });
+    }
+
+    async promiseRequest<V>(request: IDBRequest<V>): Promise<V> {
+        return new Promise((resolve, reject) => {
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+        });
+    }
+
+    async promiseCursorRequest<K extends IDBValidKey, V>(
+        request: IDBRequest<IDBCursorWithValue | null>
+    ): Promise<Map<K, V>> {
+        return new Promise((resolve, reject) => {
+            const values = new Map();
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                const cursor: IDBCursorWithValue | null = request.result;
+                if (cursor) {
+                    values.set(cursor.key, cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(values);
+                }
+            };
+        });
+    }
+
     /**
      * Delete a row.
      * Be sure to convert the key to a number when the DB key has a number type.
@@ -70,48 +112,6 @@ export abstract class BasicIndexedDBRepository {
             return value;
         }
         throw new Error(`Unable to find a row with key: "${key}" in the store "${storeName}"`);
-    }
-
-    protected async promiseRequest<V>(request: IDBRequest<V>): Promise<V> {
-        return new Promise((resolve, reject) => {
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => resolve(request.result);
-        });
-    }
-
-    protected async promiseCursorRequest<K extends IDBValidKey, V>(
-        request: IDBRequest<IDBCursorWithValue | null>
-    ): Promise<Map<K, V>> {
-        return new Promise((resolve, reject) => {
-            const values = new Map();
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                const cursor: IDBCursorWithValue | null = request.result;
-                if (cursor) {
-                    values.set(cursor.key, cursor.value);
-                    cursor.continue();
-                } else {
-                    resolve(values);
-                }
-            };
-        });
-    }
-
-    protected async transaction<V>(
-        body: (transaction: IDBTransaction) => Promise<V>,
-        mode: "readonly" | "readwrite" = "readwrite"
-    ): Promise<V> {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(this.db.objectStoreNames, mode);
-            const transactionResultPromise = body(transaction);
-
-            transaction.onabort = event => reject((event.target as IDBTransaction).error);
-            transaction.oncomplete = () => {
-                transactionResultPromise
-                    .then(result => resolve(result))
-                    .catch(error => reject(error));
-            };
-        });
     }
 
     private onBlocked(event: Event): void {

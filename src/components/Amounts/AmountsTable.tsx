@@ -29,8 +29,9 @@ export class AmountsTable extends React.Component<{
         return (
             <div>
                 <h2>Your wallet</h2>
-                <PutAmount buttonProps={{variant: "primary", className: "mb-2"}}
+                <PutAmount modalTitle={"Add new amount"}
                            buttonText={{main: "Add amount", modal: "Add"}}
+                           buttonProps={{variant: "primary", className: "mb-2"}}
                            flushOnHide={false}
                            dbRepository={this.props.dbRepository} exchangeRates={this.props.exchangeRates}
                            onChange={this.props.onAmountsChange}/>
@@ -39,11 +40,11 @@ export class AmountsTable extends React.Component<{
                         <thead>
                         <tr>
                             <th>Amount</th>
-                            <th className={"text-nowrap"}>
+                            <th className={"text-nowrap"} title={`Amount in ${selectedCurrencyInfo.name}`}>
                                 Amount in {selectedCurrencyInfo.unit}
                             </th>
                             <th>Comment</th>
-                            <th colSpan={3}>Actions</th>
+                            <th colSpan={5}>Actions</th>
                         </tr>
                         </thead>
                         <tfoot>

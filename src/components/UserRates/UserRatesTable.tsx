@@ -3,6 +3,7 @@ import {AddNewRate} from "./AddNewRate";
 import {CurrencyInfo, UserRate, WalletRepository} from "../../repositories/WalletRepository";
 import {LoadingButton} from "../Utils/LoadingButton";
 import {formatAmount, getRelativeExchangeRate, showError} from "../../helpers";
+import deleteIcon from "bootstrap-icons/icons/trash3.svg?raw";
 
 interface State {
     userRates?: Map<number, UserRate>,
@@ -59,8 +60,10 @@ export class UserRatesTable extends React.Component<{
                         </td>
                         <td className={"text-center"}>
                             <LoadingButton<number> payload={id}
-                                                   buttonProps={{variant: "secondary", size: "sm"}}
-                                                   onClick={this.deleteUserRate}>Delete</LoadingButton>
+                                                   buttonProps={{variant: "danger", size: "sm"}}
+                                                   onClick={this.deleteUserRate}>
+                                <span className={"icon"} dangerouslySetInnerHTML={{__html: deleteIcon}}/>
+                            </LoadingButton>
                         </td>
                     </tr>
                 );

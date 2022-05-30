@@ -9,7 +9,7 @@
         "build-prod-analyze-bundle": "webpack --config webpack.prod.analyze-bundle.js",
         "update_browserslist": "npx browserslist@latest --update-db",
         "check-types": "tsc --noEmit",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "jest"
     },
     "repository": {
         "type": "git",
@@ -22,6 +22,7 @@
     "license": "ISC",
     "dependencies": {
         "bootstrap": "^5.1.3",
+        "bootstrap-icons": "^1.8.2",
         "bootswatch": "^5.1.3",
         "core-js": "^3.21.1",
         "react": "^18.1.0",
@@ -35,14 +36,17 @@
         "@babel/preset-env": "^7.16.11",
         "@babel/preset-react": "^7.16.7",
         "@fullhuman/postcss-purgecss": "^4.1.3",
+        "@types/jest": "^27.5.1",
         "@types/react": "^18.0.6",
         "@types/react-dom": "^18.0.2",
         "babel-loader": "^8.2.4",
         "css-loader": "^6.7.1",
         "html-webpack-plugin": "^5.5.0",
+        "jest": "^28.1.0",
         "postcss": "^8.4.13",
         "postcss-loader": "^6.2.1",
         "style-loader": "^3.3.1",
+        "ts-jest": "^28.0.2",
         "ts-loader": "^9.2.8",
         "typescript": "^4.6.3",
         "webpack": "^5.72.0",

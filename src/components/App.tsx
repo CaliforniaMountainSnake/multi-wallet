@@ -10,6 +10,7 @@ import {AppNavbar} from "./AppNavbar";
 import {ThemeConfigurator} from "./Themes/ThemeConfigurator";
 import {ThemeName} from "./Themes/InstalledThemes";
 import {DarkModeAware} from "./Themes/DarkModeProvider";
+import warningIcon from "bootstrap-icons/icons/exclamation-triangle.svg?raw";
 
 interface Props extends DarkModeAware {
     defaultCurrency: "usd";
@@ -67,7 +68,7 @@ export default class App extends React.Component<Props, State> {
 
     private async loadDbData(dbRepository: WalletRepository): Promise<State> {
         const [amounts, rates, timestamp, selectedCurrency, lightTheme, darkTheme] = await Promise.all([
-            dbRepository.getAmounts(),
+            dbRepository.amountRepository.getAll(),
             dbRepository.getExchangeRates(),
             dbRepository.getConfig("last_update_timestamp"),
             dbRepository.getConfig("selected_currency"),
@@ -172,7 +173,10 @@ export default class App extends React.Component<Props, State> {
                                           onSelectedCurrencyChange={this.onDbDataChanged}/>
                         </div>
                     </div>
-                    <LoadingButton buttonProps={{variant: "danger"}} onClick={this.deleteDb}>⚠ Clear DB</LoadingButton>
+                    <LoadingButton buttonProps={{variant: "danger"}} onClick={this.deleteDb}>
+                        <span className={"icon"} dangerouslySetInnerHTML={{__html: warningIcon}}/>
+                        &nbsp;Clear DB
+                    </LoadingButton>
                 </div>
             </ThemeLoader>
         );

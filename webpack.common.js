@@ -34,7 +34,7 @@ module.exports = {
                 // @see https://webpack.js.org/guides/asset-modules/#source-assets
                 resourceQuery: /raw/,
                 type: "asset/source",
-            }
+            },
         ]
     },
     optimization: {

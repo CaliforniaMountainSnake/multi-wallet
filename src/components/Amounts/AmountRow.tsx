@@ -3,6 +3,10 @@ import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletR
 import {LoadingButton} from "../Utils/LoadingButton";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
 import {PutAmount} from "./PutAmount";
+import deleteIcon from "bootstrap-icons/icons/trash3.svg?raw";
+import editIcon from "bootstrap-icons/icons/pencil.svg?raw";
+import arrowUpIcon from "bootstrap-icons/icons/arrow-up.svg?raw";
+import arrowDownIcon from "bootstrap-icons/icons/arrow-down.svg?raw";
 
 export class AmountRow extends React.Component<{
     dbRepository: WalletRepository,
@@ -12,9 +16,19 @@ export class AmountRow extends React.Component<{
     selectedCurrencySymbol: string,
     onChange: () => void,
 }> {
+    private moveUp = async (): Promise<void> => {
+        await this.props.dbRepository.amountRepository.moveUp(this.props.amountId);
+        this.props.onChange();
+    };
+
+    private moveDown = async (): Promise<void> => {
+        await this.props.dbRepository.amountRepository.moveDown(this.props.amountId);
+        this.props.onChange();
+    };
+
     private deleteAmount = async (): Promise<void> => {
         if (confirm(this.getAmountDeletionMsg(this.props.amount))) {
-            await this.props.dbRepository.deleteAmount(this.props.amountId);
+            await this.props.dbRepository.amountRepository.delete(this.props.amountId);
             console.debug(`Amount with key "${this.props.amountId}" has been deleted.`, this.props.amount);
             this.props.onChange();
         }
@@ -32,7 +46,7 @@ export class AmountRow extends React.Component<{
         const clonedAmount = Object.assign({}, this.props.amount);
         clonedAmount.enabled = !clonedAmount.enabled;
 
-        this.props.dbRepository.putAmount(clonedAmount, this.props.amountId)
+        this.props.dbRepository.amountRepository.put(clonedAmount, this.props.amountId)
             .then(this.props.onChange).catch(error => {
             this.setState(() => {
                 throw error;
@@ -66,8 +80,12 @@ export class AmountRow extends React.Component<{
                     </div>
                 </td>
                 <td className={"text-center"}>
-                    <PutAmount buttonProps={{variant: "secondary", size: "sm"}}
-                               buttonText={{main: "Edit", modal: "Update"}}
+                    <PutAmount modalTitle={"Edit amount"}
+                               buttonText={{
+                                   main: (<span className={"icon"} dangerouslySetInnerHTML={{__html: editIcon}}/>),
+                                   modal: "Update",
+                               }}
+                               buttonProps={{variant: "secondary", size: "sm"}}
                                flushOnHide={true}
                                dbRepository={this.props.dbRepository} exchangeRates={this.props.exchangeRates}
                                initialAmount={this.props.amount}
@@ -76,7 +94,21 @@ export class AmountRow extends React.Component<{
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}
-                                   onClick={this.deleteAmount}>Delete</LoadingButton>
+                                   onClick={this.moveUp}>
+                        <span className={"icon"} dangerouslySetInnerHTML={{__html: arrowUpIcon}}/>
+                    </LoadingButton>
+                </td>
+                <td className={"text-center"}>
+                    <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}
+                                   onClick={this.moveDown}>
+                        <span className={"icon"} dangerouslySetInnerHTML={{__html: arrowDownIcon}}/>
+                    </LoadingButton>
+                </td>
+                <td className={"text-center"}>
+                    <LoadingButton buttonProps={{variant: "danger", size: "sm"}}
+                                   onClick={this.deleteAmount}>
+                        <span className={"icon"} dangerouslySetInnerHTML={{__html: deleteIcon}}/>
+                    </LoadingButton>
                 </td>
             </tr>
         );

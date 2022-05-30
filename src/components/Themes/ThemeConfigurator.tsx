@@ -5,6 +5,7 @@ import {LazyThemeLoader, ThemeName} from "./InstalledThemes";
 import {validate, ValidationErrors, validator} from "../../validation/Validator";
 import {DarkModeAware} from "./DarkModeProvider";
 import {HasModal, ModalState} from "../interfaces/HasModal";
+import themeIcon from "bootstrap-icons/icons/palette.svg?raw";
 
 interface FormData {
     lightTheme: string,
@@ -136,7 +137,10 @@ export class ThemeConfigurator extends React.Component<Props, State> implements 
                         </Form>
                     </Modal.Body>
                 </Modal>
-                <Button variant={"outline-light"} onClick={this.showModal}>Theme</Button>
+                <Button variant={"outline-light"} onClick={this.showModal}>
+                    <span className={"icon"} dangerouslySetInnerHTML={{__html: themeIcon}}/>
+                    &nbsp;Theme
+                </Button>
             </React.Fragment>
         );
     }

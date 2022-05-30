@@ -2,6 +2,7 @@ import React, {ReactNode} from "react";
 import {LoadingButton} from "./Utils/LoadingButton";
 import {showError} from "../helpers";
 import {WalletRepository} from "../repositories/WalletRepository";
+import refreshIcon from "bootstrap-icons/icons/arrow-repeat.svg?raw";
 
 export class ExchangeRatesUpdater extends React.Component<{
     dbRepository: WalletRepository,
@@ -22,15 +23,16 @@ export class ExchangeRatesUpdater extends React.Component<{
         return (
             <div className={"card mb-3"}>
                 <div className={"row card-body"}>
-                    <div className={"col-12 col-md-8 mb-1 mb-md-0"}>
-                        <h5 className={"card-title"}>Date of the last exchange rates update:</h5>
+                    <div className={"col-12 col-sm-8 mb-1 mb-sm-0"}>
+                        <h5 className={"card-title"}>Exchange rates last update:</h5>
                         <h6 className={"card-subtitle text-muted"}>
                             {(new Date(this.props.ratesLastUpdateTimestamp)).toLocaleString()}
                         </h6>
                     </div>
-                    <div className={"col-12 col-md-4 d-flex justify-content-md-end"}>
+                    <div className={"col-12 col-sm-4 d-flex justify-content-sm-end"}>
                         <LoadingButton buttonProps={{variant: "primary"}} onClick={this.handleClick}>
-                            🗘 Update exchange rates
+                            <span className={"icon"} dangerouslySetInnerHTML={{__html: refreshIcon}}/>
+                            &nbsp;Update
                         </LoadingButton>
                     </div>
                 </div>

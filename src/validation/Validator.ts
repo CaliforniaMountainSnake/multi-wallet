@@ -41,10 +41,11 @@ async function symbolValidator(symbol: string, exchangeRates: Map<string, Curren
 }
 
 /**
- * Make all fields of the object optional Errors with a name in the form "xxxError".
+ * Make all fields of the object optional Errors with a name in the form "xxxError",
+ * except for fields from the second param (exclude them).
  */
-export type ValidationErrors<T> = {
-    [P in keyof T as `${string & P}Error`]?: Error
+export type ValidationErrors<T, Except extends keyof T = never> = {
+    [P in keyof Omit<T, Except> as `${string & P}Error`]?: Error
 };
 
 /**
@@ -72,8 +73,6 @@ type PromiseResults<V, T extends PromisesObject<V>> = {
 
 /**
  * Validate given data.
- *
- * @TODO: It definitely needs to be tested.
  */
 export function validate<V, T extends PromisesObject<V>>(
     values: T,

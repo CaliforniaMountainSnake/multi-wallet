@@ -6,22 +6,26 @@ import {Button, Form, Modal} from "react-bootstrap";
 import {HasModal, ModalState} from "../interfaces/HasModal";
 import {ButtonProps} from "react-bootstrap/Button";
 
-type FormData = RequireStrings<Amount, "enabled">
+type FormData = RequireStrings<Amount, "enabled" | "prevNodeKey" | "nextNodeKey">
 
-type FormErrors = ValidationErrors<FormData>
+type FormErrors = ValidationErrors<FormData, "enabled" | "prevNodeKey" | "nextNodeKey">
 
 type InitialFormData = InitialData<{
     amount: Amount,
     amountId: number
 }>
 
-interface Props extends InitialFormData {
+interface ModalProps {
+    modalTitle: string,
+    buttonText: { main: ReactNode, modal: string },
+    buttonProps: Omit<ButtonProps, "onClick" | "children">
+    flushOnHide: boolean,
+}
+
+interface Props extends InitialFormData, ModalProps {
     dbRepository: WalletRepository,
     exchangeRates: Map<string, CurrencyInfo>,
     onChange: () => void,
-    buttonText: { main: string, modal: string },
-    buttonProps: Omit<ButtonProps, "onClick" | "children">
-    flushOnHide: boolean,
 }
 
 interface State extends ModalState, FormData, FormErrors {
@@ -41,10 +45,11 @@ export class PutAmount extends React.Component<Props, State> implements HasModal
         symbol: this.props.initialAmount?.symbol ?? this.props.exchangeRates.keys().next().value,
         comment: this.props.initialAmount?.comment ?? "",
         enabled: this.props.initialAmount?.enabled ?? true,
+        prevNodeKey: this.props.initialAmount?.prevNodeKey ?? this.props.dbRepository.amountRepository.store.nullishKey,
+        nextNodeKey: this.props.initialAmount?.nextNodeKey ?? this.props.dbRepository.amountRepository.store.nullishKey,
         amountError: undefined,
         symbolError: undefined,
         commentError: undefined,
-        enabledError: undefined,
     };
     state: State = this.initialState;
 
@@ -64,11 +69,15 @@ export class PutAmount extends React.Component<Props, State> implements HasModal
             comment: validator.comment(this.state.comment),
         }, validatedData => {
             (async () => {
-                const amount: Amount = Object.assign({}, validatedData, {enabled: this.state.enabled});
-                const addedRowKey = await this.props.dbRepository.putAmount(amount, this.props.initialAmountId);
+                const amount: Amount = Object.assign({
+                    enabled: this.state.enabled,
+                    prevNodeKey: this.state.prevNodeKey,
+                    nextNodeKey: this.state.nextNodeKey,
+                }, validatedData);
+                const key = await this.props.dbRepository.amountRepository.put(amount, this.props.initialAmountId);
                 this.setState(this.initialState);
                 this.props.onChange();
-                console.debug("Added amount with key:", addedRowKey);
+                console.debug("Put amount with key:", key);
             })().catch(error => {
                 this.setState(() => {
                     throw  error;
@@ -100,7 +109,7 @@ export class PutAmount extends React.Component<Props, State> implements HasModal
                        centered={true}
                        onHide={this.hideModal}>
                     <Modal.Header closeButton>
-                        <Modal.Title>Add new amount</Modal.Title>
+                        <Modal.Title>{this.props.modalTitle}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <Form onSubmit={this.handleFormSubmit}>
