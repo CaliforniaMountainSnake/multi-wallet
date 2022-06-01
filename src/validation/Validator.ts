@@ -1,5 +1,6 @@
 import {CurrencyInfo, UserRate} from "../repositories/WalletRepository";
 import {LazyThemeLoader, ThemeName} from "../components/Themes/InstalledThemes";
+import {Node} from "../repositories/DoublyLinkedListRepository";
 
 export const validator = {
     amount: async (amount: string): Promise<number> => {
@@ -10,7 +11,11 @@ export const validator = {
         return parsed;
     },
     symbol: symbolValidator,
-    symbols: async (symbol1: string, symbol2: string, exchangeRates: Map<string, CurrencyInfo>): Promise<UserRate> => {
+    symbols: async (
+        symbol1: string,
+        symbol2: string,
+        exchangeRates: Map<string, CurrencyInfo>
+    ): Promise<Omit<UserRate, keyof Node>> => {
         await symbolValidator(symbol1, exchangeRates);
         await symbolValidator(symbol2, exchangeRates);
         if (symbol1 === symbol2) {

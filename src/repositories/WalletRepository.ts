@@ -12,14 +12,17 @@ export class WalletRepository extends BasicIndexedDBRepository {
         amounts: "amounts",
     };
     private readonly amountNodeStore = new IndexedDbNodeStore<Amount>(this, this.storeNames.amounts);
+    private readonly userRateNodeStore = new IndexedDbNodeStore<UserRate>(this, this.storeNames.userRates);
+
     public readonly amountRepository = new DoublyLinkedListRepository<Amount>(this.amountNodeStore);
+    public readonly userRateRepository = new DoublyLinkedListRepository<UserRate>(this.userRateNodeStore);
 
     get dbName(): string {
         return "multi-wallet-app";
     }
 
     get dbVersion(): number {
-        return 6;
+        return 7;
     }
 
     getMigrations(): Map<number, (db: IDBDatabase, transaction: IDBTransaction) => Promise<void>> {
@@ -46,8 +49,12 @@ export class WalletRepository extends BasicIndexedDBRepository {
                 }
             }],
             [6, async (db: IDBDatabase, transaction: IDBTransaction) => {
-                // Transform the store to a doubly linked list to have ability to change row order in O(1) time.
+                // Transform amounts store to a doubly linked list to have ability to change row order in O(1) time.
                 await this.amountNodeStore.migrateStoreToDoublyLinkedList(transaction, this.amountRepository);
+            }],
+            [7, async (db: IDBDatabase, transaction: IDBTransaction) => {
+                // Transform user rates store to a doubly linked list to have ability to change row order in O(1) time.
+                await this.userRateNodeStore.migrateStoreToDoublyLinkedList(transaction, this.userRateRepository);
             }],
         ]);
     }
@@ -69,24 +76,6 @@ export class WalletRepository extends BasicIndexedDBRepository {
         });
     }
 
-    async getUserRates(): Promise<Map<number, UserRate>> {
-        return await this.transaction(async transaction => {
-            const store = transaction.objectStore(this.storeNames.userRates);
-            return await this.promiseCursorRequest<number, UserRate>(store.openCursor());
-        }, "readonly");
-    }
-
-    async addUserRate(rate: UserRate): Promise<IDBValidKey> {
-        return await this.transaction(async transaction => {
-            const store = transaction.objectStore(this.storeNames.userRates);
-            return await this.promiseRequest(store.add(rate));
-        });
-    }
-
-    async deleteUserRate(key: number): Promise<void> {
-        return await this.deleteByKey(this.storeNames.userRates, key);
-    }
-
     async getExchangeRates(): Promise<Map<string, CurrencyInfo>> {
         return await this.transaction(async transaction => {
             const store = transaction.objectStore(this.storeNames.exchangeRates);
@@ -94,7 +83,7 @@ export class WalletRepository extends BasicIndexedDBRepository {
         }, "readonly");
     }
 
-    async updateExchangeRates(data: Map<string, BtcRate>): Promise<void> {
+    async setExchangeRates(data: Map<string, BtcRate>): Promise<void> {
         return await this.transaction(async transaction => {
             const ratesStore = transaction.objectStore(this.storeNames.exchangeRates);
             const configStore = transaction.objectStore(this.storeNames.configs);
@@ -128,7 +117,7 @@ export interface Amount extends Node {
     comment?: string
 }
 
-export interface UserRate {
+export interface UserRate extends Node {
     symbol1: string,
     symbol2: string,
 }

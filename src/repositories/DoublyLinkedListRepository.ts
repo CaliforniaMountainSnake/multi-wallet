@@ -44,9 +44,14 @@ export interface NodeStoreTransaction<N extends Node> {
  */
 export class DoublyLinkedListRepository<N extends Node> {
     public readonly store: NodeStore<N>;
+    public readonly nullishNode: Readonly<Node>;
 
     constructor(store: NodeStore<N>) {
         this.store = store;
+        this.nullishNode = {
+            prevNodeKey: this.store.nullishKey,
+            nextNodeKey: this.store.nullishKey,
+        };
     }
 
     async getAll(direction: "asc" | "desc" = "asc"): Promise<Map<NodeKey, N>> {

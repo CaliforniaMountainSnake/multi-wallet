@@ -1,5 +1,5 @@
 import React, {ReactNode} from "react";
-import {Amount, CurrencyInfo, WalletRepository} from "../repositories/WalletRepository";
+import {Amount, CurrencyInfo, UserRate, WalletRepository} from "../repositories/WalletRepository";
 import {ExchangeRatesUpdater} from "./ExchangeRatesUpdater";
 import {AmountsTable} from "./Amounts/AmountsTable";
 import {LoadingButton} from "./Utils/LoadingButton";
@@ -19,9 +19,10 @@ interface Props extends DarkModeAware {
 }
 
 interface State {
-    amounts: Map<number, Amount>,
-    exchangeRates: Map<string, CurrencyInfo>,
     dbRepository?: WalletRepository,
+    exchangeRates: Map<string, CurrencyInfo>,
+    amounts: Map<number, Amount>,
+    userRates: Map<number, UserRate>,
     ratesLastUpdateTimestamp?: number,
     selectedCurrencySymbol?: string,
     lightTheme?: ThemeName,
@@ -34,6 +35,7 @@ export default class App extends React.Component<Props, State> {
     private initialState: State = {
         amounts: new Map(),
         exchangeRates: new Map(),
+        userRates: new Map(),
     };
     state: State = this.initialState;
 
@@ -59,7 +61,7 @@ export default class App extends React.Component<Props, State> {
     private loadFreshExchangeRates = async (dbRepository: WalletRepository): Promise<void> => {
         try {
             const rawRates = await this.coingeckoRepository.getExchangeRates();
-            await dbRepository.updateExchangeRates(rawRates);
+            await dbRepository.setExchangeRates(rawRates);
             console.debug("Fresh exchange rates were loaded from coingecko and saved into the DB.");
         } catch (error) {
             throw new Error(`Unable to load fresh exchange rates: ${error}`);
@@ -67,9 +69,10 @@ export default class App extends React.Component<Props, State> {
     };
 
     private async loadDbData(dbRepository: WalletRepository): Promise<State> {
-        const [amounts, rates, timestamp, selectedCurrency, lightTheme, darkTheme] = await Promise.all([
-            dbRepository.amountRepository.getAll(),
+        const [exchangeRates, amounts, userRates, timestamp, selectedCurrency, lightTheme, darkTheme] = await Promise.all([
             dbRepository.getExchangeRates(),
+            dbRepository.amountRepository.getAll(),
+            dbRepository.userRateRepository.getAll(),
             dbRepository.getConfig("last_update_timestamp"),
             dbRepository.getConfig("selected_currency"),
             dbRepository.getConfig("light_theme"),
@@ -77,8 +80,9 @@ export default class App extends React.Component<Props, State> {
         ]);
         return {
             dbRepository: dbRepository,
+            exchangeRates: exchangeRates,
             amounts: amounts,
-            exchangeRates: rates,
+            userRates: userRates,
             ratesLastUpdateTimestamp: timestamp,
             selectedCurrencySymbol: selectedCurrency,
             lightTheme: lightTheme,
@@ -154,17 +158,19 @@ export default class App extends React.Component<Props, State> {
                                        installedLightTheme={this.state.lightTheme}
                                        installedDarkTheme={this.state.darkTheme}/>
                 </AppNavbar>
-                <div className={"container-lg mt-2 mb-2"}>
+                <div className={"container-xl mt-2 mb-2"}>
                     <ExchangeRatesUpdater dbRepository={this.state.dbRepository}
                                           ratesLastUpdateTimestamp={this.state.ratesLastUpdateTimestamp}
                                           loadFreshExchangeRates={this.loadFreshExchangeRates}
                                           onChange={this.onDbDataChanged}/>
                     <div className={"row"}>
-                        <div className={"col-12 col-lg-4"}>
-                            <UserRatesTable dbRepository={this.state.dbRepository}
-                                            exchangeRates={this.state.exchangeRates}/>
+                        <div className={"col-12 col-xl-5"}>
+                            <UserRatesTable rateRepository={this.state.dbRepository.userRateRepository}
+                                            exchangeRates={this.state.exchangeRates}
+                                            userRates={this.state.userRates}
+                                            onChange={this.onDbDataChanged}/>
                         </div>
-                        <div className={"col-12 col-lg-8"}>
+                        <div className={"col-12 col-xl-7"}>
                             <AmountsTable dbRepository={this.state.dbRepository}
                                           amounts={this.state.amounts}
                                           exchangeRates={this.state.exchangeRates}

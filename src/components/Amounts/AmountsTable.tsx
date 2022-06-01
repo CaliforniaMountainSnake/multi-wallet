@@ -19,7 +19,8 @@ export class AmountsTable extends React.Component<{
         const amounts = [];
         for (const [id, amount] of this.props.amounts.entries()) {
             amounts.push(
-                <AmountRow key={id} dbRepository={this.props.dbRepository} amountId={id} amount={amount}
+                <AmountRow key={id} amountId={id} amount={amount}
+                           amountRepository={this.props.dbRepository.amountRepository}
                            exchangeRates={this.props.exchangeRates}
                            selectedCurrencySymbol={this.props.selectedCurrencySymbol}
                            onChange={this.props.onAmountsChange}/>
@@ -33,7 +34,8 @@ export class AmountsTable extends React.Component<{
                            buttonText={{main: "Add amount", modal: "Add"}}
                            buttonProps={{variant: "primary", className: "mb-2"}}
                            flushOnHide={false}
-                           dbRepository={this.props.dbRepository} exchangeRates={this.props.exchangeRates}
+                           amountRepository={this.props.dbRepository.amountRepository}
+                           exchangeRates={this.props.exchangeRates}
                            onChange={this.props.onAmountsChange}/>
                 <div className={"table-responsive"}>
                     <table className={"table table-bordered align-middle"}>

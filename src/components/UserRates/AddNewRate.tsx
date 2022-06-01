@@ -4,8 +4,9 @@ import {CurrencySelect} from "../Utils/CurrencySelect";
 import {Button, Form, Modal} from "react-bootstrap";
 import {RequireStrings, validate, ValidationErrors, validator} from "../../validation/Validator";
 import {HasModal, ModalState} from "../interfaces/HasModal";
+import {DoublyLinkedListRepository, Node} from "../../repositories/DoublyLinkedListRepository";
 
-type FormData = RequireStrings<UserRate>
+type FormData = RequireStrings<Omit<UserRate, keyof Node>>
 
 type FormErrors = ValidationErrors<FormData & { symbols: never }>
 
@@ -13,7 +14,7 @@ interface State extends ModalState, FormData, FormErrors {
 }
 
 export class AddNewRate extends React.Component<{
-    dbRepository: WalletRepository,
+    rateRepository: DoublyLinkedListRepository<UserRate>,
     exchangeRates: Map<string, CurrencyInfo>,
     onChange: () => void,
     className?: string,
@@ -49,7 +50,11 @@ export class AddNewRate extends React.Component<{
             symbols: validator.symbols(this.state.symbol1, this.state.symbol2, this.props.exchangeRates),
         }, validatedData => {
             (async () => {
-                const addedKey = await this.props.dbRepository.addUserRate(validatedData);
+                const userRate: UserRate = Object.assign({},
+                    this.props.rateRepository.nullishNode,
+                    validatedData.symbols,
+                );
+                const addedKey = await this.props.rateRepository.addToEnd(userRate);
                 this.setState(this.initialState);
                 this.props.onChange();
                 console.debug("New user exchange rate added", addedKey);

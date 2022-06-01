@@ -1,10 +1,11 @@
 import React, {ReactNode} from "react";
 import {CurrencySelect} from "../Utils/CurrencySelect";
-import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
+import {Amount, CurrencyInfo} from "../../repositories/WalletRepository";
 import {InitialData, RequireStrings, validate, ValidationErrors, validator} from "../../validation/Validator";
 import {Button, Form, Modal} from "react-bootstrap";
 import {HasModal, ModalState} from "../interfaces/HasModal";
 import {ButtonProps} from "react-bootstrap/Button";
+import {DoublyLinkedListRepository} from "../../repositories/DoublyLinkedListRepository";
 
 type FormData = RequireStrings<Amount, "enabled" | "prevNodeKey" | "nextNodeKey">
 
@@ -23,7 +24,7 @@ interface ModalProps {
 }
 
 interface Props extends InitialFormData, ModalProps {
-    dbRepository: WalletRepository,
+    amountRepository: DoublyLinkedListRepository<Amount>,
     exchangeRates: Map<string, CurrencyInfo>,
     onChange: () => void,
 }
@@ -45,8 +46,8 @@ export class PutAmount extends React.Component<Props, State> implements HasModal
         symbol: this.props.initialAmount?.symbol ?? this.props.exchangeRates.keys().next().value,
         comment: this.props.initialAmount?.comment ?? "",
         enabled: this.props.initialAmount?.enabled ?? true,
-        prevNodeKey: this.props.initialAmount?.prevNodeKey ?? this.props.dbRepository.amountRepository.store.nullishKey,
-        nextNodeKey: this.props.initialAmount?.nextNodeKey ?? this.props.dbRepository.amountRepository.store.nullishKey,
+        prevNodeKey: this.props.initialAmount?.prevNodeKey ?? this.props.amountRepository.store.nullishKey,
+        nextNodeKey: this.props.initialAmount?.nextNodeKey ?? this.props.amountRepository.store.nullishKey,
         amountError: undefined,
         symbolError: undefined,
         commentError: undefined,
@@ -74,7 +75,7 @@ export class PutAmount extends React.Component<Props, State> implements HasModal
                     prevNodeKey: this.state.prevNodeKey,
                     nextNodeKey: this.state.nextNodeKey,
                 }, validatedData);
-                const key = await this.props.dbRepository.amountRepository.put(amount, this.props.initialAmountId);
+                const key = await this.props.amountRepository.put(amount, this.props.initialAmountId);
                 this.setState(this.initialState);
                 this.props.onChange();
                 console.debug("Put amount with key:", key);
