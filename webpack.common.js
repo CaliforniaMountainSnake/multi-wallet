@@ -1,5 +1,6 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const {GenerateSW} = require("workbox-webpack-plugin");
 
 module.exports = {
     entry: "./src/index.tsx",
@@ -44,5 +45,6 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin(),
+        new GenerateSW({}),
     ],
 };
