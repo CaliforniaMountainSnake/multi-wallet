@@ -8,7 +8,7 @@ import {TopLevelErrorBoundary} from "./components/TopLevelErrorBoundary";
 import "./styles/style.css";
 
 if ("serviceWorker" in navigator) {
-    const wb = new Workbox("/service-worker.js");
+    const wb = new Workbox("service-worker.js");
     wb.register().then(() => console.debug("Service worker has been registered."));
 }
 

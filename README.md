@@ -16,4 +16,5 @@ The total result can be presented in any currency you want.
 - ~~Babel.~~
 - [TypeScript](https://www.typescriptlang.org/) (`ts-loader`).
 - [IndexedDB](https://www.w3.org/TR/IndexedDB/) for data storage.
+- [Workbox](https://developer.chrome.com/docs/workbox/service-worker-overview/) for service worker.
 - [Coingecko API](https://www.coingecko.com/ru/api/documentation) for exchange rates.
