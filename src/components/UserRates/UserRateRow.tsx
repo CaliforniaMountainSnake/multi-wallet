@@ -57,8 +57,11 @@ export class UserRateRow extends React.Component<{
                     {" "}{currencyInfo2.unit}
                 </td>
                 <td className={"text-center"}>
-                    <HistoryChart ohlcRepository={this.props.dbRepository.ohlcRepository}
-                                  symbol1={this.props.rate.symbol1} symbol2={this.props.rate.symbol2}/>
+                    <HistoryChart title={`${this.props.rate.symbol1}/${this.props.rate.symbol2}`}
+                                  buttonProps={{variant: "secondary", size: "sm"}}
+                                  ohlcRepository={this.props.dbRepository.ohlcRepository}
+                                  vsCurrency={this.props.rate.symbol2}
+                                  targetCurrencies={new Map([[this.props.rate.symbol1, 1]])}/>
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}

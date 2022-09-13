@@ -35,7 +35,12 @@ export class UserRatesTable extends React.Component<{
                             <th colSpan={3}>Actions</th>
                         </tr>
                         </thead>
-                        <tbody>{rows}</tbody>
+                        <tbody>{rows.length !== 0 ? rows
+                            : <tr>
+                                <td colSpan={6}>
+                                    You don't have added exchange rates yet.
+                                </td>
+                            </tr>}</tbody>
                     </table>
                 </div>
             </div>

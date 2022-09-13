@@ -7,7 +7,7 @@ import {convertAmountToCurrency, formatAmount} from "../../helpers";
 import {DoublyLinkedListRepository} from "../../repositories/DoublyLinkedListRepository";
 import {Amount, CurrencyInfo} from "../../repositories/WalletRepository";
 import {LoadingButton, LoadingButtonClickHandler} from "../Utils/LoadingButton";
-import StandardPlaceholder from "../Utils/StandardPlaceholder";
+import AmountRowPlaceholder from "./AmountRowPlaceholder";
 import {PutAmount} from "./PutAmount";
 
 export class AmountRow extends React.Component<{
@@ -58,13 +58,8 @@ export class AmountRow extends React.Component<{
         const currencyInfo = this.props.exchangeRates.get(this.props.amount.symbol);
         const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol);
         if (!currencyInfo || !selectedCurrencyInfo) {
-            return (
-                <tr>
-                    <td colSpan={8}><StandardPlaceholder/></td>
-                </tr>
-            );
+            return <AmountRowPlaceholder/>;
         }
-
 
         const amountInSelectedCurrency = convertAmountToCurrency(
             this.props.exchangeRates,
@@ -81,6 +76,7 @@ export class AmountRow extends React.Component<{
                     {formatAmount(amountInSelectedCurrency)} {selectedCurrencyInfo.unit}
                 </td>
                 <td style={{whiteSpace: "pre-line"}}>{this.props.amount.comment ?? ""}</td>
+                {/* buttons: */}
                 <td className={"text-center"}>
                     <div className={"form-switch"}>
                         <input type={"checkbox"} role={"switch"} className={"form-check-input"}
