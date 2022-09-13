@@ -109,21 +109,20 @@ export default function HistoryChart(props: {
                 <Modal.Title className={"text-uppercase"}>{props.symbol1}/{props.symbol2}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                {chartData
-                    ? chartData.length === 0
-                        ? <NoDataMessage symbol1={props.symbol1} symbol2={props.symbol2}/>
-                        : <Chart type={"area"}
-                                 options={chartOptions}
-                                 series={flatPriceCandles(chartData)}/>
-                    : <StandardPlaceholder/>}
-
-                <div className={"d-flex flex-row justify-content-between"}>
-                    {makeSetChartDaysButton(7)}
-                    {makeSetChartDaysButton(30)}
-                    {makeSetChartDaysButton(90)}
-                    {makeSetChartDaysButton(365)}
-                    {makeSetChartDaysButton(Number.MAX_VALUE)}
-                </div>
+                {!chartData ? <StandardPlaceholder/>
+                    : chartData.length === 0 ? <NoDataMessage symbol1={props.symbol1} symbol2={props.symbol2}/>
+                        : <>
+                            <Chart type={"area"}
+                                   options={chartOptions}
+                                   series={flatPriceCandles(chartData)}/>
+                            <div className={"d-flex flex-row justify-content-between"}>
+                                {makeSetChartDaysButton(7)}
+                                {makeSetChartDaysButton(30)}
+                                {makeSetChartDaysButton(90)}
+                                {makeSetChartDaysButton(365)}
+                                {makeSetChartDaysButton(Number.MAX_VALUE)}
+                            </div>
+                        </>}
             </Modal.Body>
         </Modal>
         <Button variant="secondary" size={"sm"} onClick={onShowModal}>
