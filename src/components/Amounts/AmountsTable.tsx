@@ -1,5 +1,6 @@
 import React, {ReactNode} from "react";
 import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
+import StandardPlaceholder from "../Utils/StandardPlaceholder";
 import {AmountRow} from "./AmountRow";
 import {AmountTotalRow} from "./AmountTotalRow";
 import {PutAmount} from "./PutAmount";
@@ -13,7 +14,7 @@ export class AmountsTable extends React.Component<{
     onSelectedCurrencyChange: () => void,
 }> {
     render(): ReactNode {
-        const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol)!;
+        const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol);
 
         // Add new rows.
         const amounts = [];
@@ -42,9 +43,11 @@ export class AmountsTable extends React.Component<{
                         <thead>
                         <tr>
                             <th>Amount</th>
-                            <th className={"text-nowrap"} title={`Amount in ${selectedCurrencyInfo.name}`}>
-                                Amount in {selectedCurrencyInfo.unit}
-                            </th>
+                            {selectedCurrencyInfo
+                                ? <th className={"text-nowrap"} title={`Amount in ${selectedCurrencyInfo.name}`}>
+                                    Amount in {selectedCurrencyInfo.unit}
+                                </th>
+                                : <th><StandardPlaceholder/></th>}
                             <th>Comment</th>
                             <th colSpan={5}>Actions</th>
                         </tr>

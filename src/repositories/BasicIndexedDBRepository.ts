@@ -1,3 +1,5 @@
+export type CursorKeyFormatter<K extends IDBValidKey, V> = (value: V, primaryKey: IDBValidKey, key: IDBValidKey) => K
+
 export abstract class BasicIndexedDBRepository {
     // You must not use this var before calling "open()".
     private db!: IDBDatabase;
@@ -66,15 +68,19 @@ export abstract class BasicIndexedDBRepository {
     }
 
     async promiseCursorRequest<K extends IDBValidKey, V>(
-        request: IDBRequest<IDBCursorWithValue | null>
+        request: IDBRequest<IDBCursorWithValue | null>,
+        limit: number = Number.MAX_VALUE,
+        keyFormatter: CursorKeyFormatter<K, V> = (value, primaryKey, key) => {
+            return primaryKey as K;
+        },
     ): Promise<Map<K, V>> {
         return new Promise((resolve, reject) => {
             const values = new Map();
             request.onerror = () => reject(request.error);
             request.onsuccess = () => {
                 const cursor: IDBCursorWithValue | null = request.result;
-                if (cursor) {
-                    values.set(cursor.key, cursor.value);
+                if (cursor && values.size < limit) {
+                    values.set(keyFormatter(cursor.value, cursor.primaryKey, cursor.key), cursor.value);
                     cursor.continue();
                 } else {
                     resolve(values);
@@ -124,7 +130,8 @@ export abstract class BasicIndexedDBRepository {
         alert(msg);
     }
 
-    private async migrateIndexedDB(event: IDBVersionChangeEvent, db: IDBDatabase, transaction: IDBTransaction): Promise<void> {
+    private async migrateIndexedDB(event: IDBVersionChangeEvent, db: IDBDatabase,
+                                   transaction: IDBTransaction): Promise<void> {
         console.warn(`IndexedDB upgrade needed! [${event.oldVersion} to ${event.newVersion}]`);
         if (!event.newVersion) {
             console.debug("Database is being deleted...");

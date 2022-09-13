@@ -1,192 +1,130 @@
-import React, {ReactNode} from "react";
-import {Amount, CurrencyInfo, UserRate, WalletRepository} from "../repositories/WalletRepository";
-import {ExchangeRatesUpdater} from "./ExchangeRatesUpdater";
-import {AmountsTable} from "./Amounts/AmountsTable";
-import {LoadingButton} from "./Utils/LoadingButton";
-import {CoingeckoRepository} from "../repositories/CoingeckoRepository";
-import {UserRatesTable} from "./UserRates/UserRatesTable";
-import {ThemeLoader} from "./Themes/ThemeLoader";
-import {AppNavbar} from "./AppNavbar";
-import {ThemeConfigurator} from "./Themes/ThemeConfigurator";
-import {ThemeName} from "./Themes/InstalledThemes";
-import {DarkModeAware} from "./Themes/DarkModeProvider";
 import warningIcon from "bootstrap-icons/icons/exclamation-triangle.svg?raw";
+import React, {ReactNode, useEffect, useState} from "react";
+import useThrowAsync from "../hooks/useThrowAsync";
+import useThrowAsyncError from "../hooks/useThrowAsyncError";
+import {Amount, CurrencyInfo, UserConfig, UserRate, WalletRepository} from "../repositories/WalletRepository";
+import {AmountsTable} from "./Amounts/AmountsTable";
+import {ApiDataUpdater} from "./ApiDataUpdater";
+import {AppNavbar} from "./AppNavbar";
+import {DarkModeAware} from "./Themes/DarkModeProvider";
+import {ThemeName} from "./Themes/InstalledThemes";
+import {ThemeConfigurator} from "./Themes/ThemeConfigurator";
+import {ThemeLoader} from "./Themes/ThemeLoader";
+import {UserRatesTable} from "./UserRates/UserRatesTable";
+import {LoadingButton, LoadingButtonClickHandler} from "./Utils/LoadingButton";
 
 interface Props extends DarkModeAware {
-    defaultCurrency: "usd";
+    defaultCurrency: string;
     defaultLightTheme: ThemeName;
     defaultDarkTheme: ThemeName;
 }
 
-interface State {
-    dbRepository?: WalletRepository,
-    exchangeRates: Map<string, CurrencyInfo>,
-    amounts: Map<number, Amount>,
-    userRates: Map<number, UserRate>,
-    ratesLastUpdateTimestamp?: number,
-    selectedCurrencySymbol?: string,
-    lightTheme?: ThemeName,
-    darkTheme?: ThemeName,
-}
+export default function App(props: Props): JSX.Element {
+    const {throwAsyncError} = useThrowAsyncError();
+    const {throwAsync} = useThrowAsync();
 
-export default class App extends React.Component<Props, State> {
-    private coingeckoRepository = new CoingeckoRepository();
+    const [dbRepository, setDbRepository] = useState<WalletRepository | undefined>(undefined);
 
-    private initialState: State = {
-        amounts: new Map(),
-        exchangeRates: new Map(),
-        userRates: new Map(),
-    };
-    state: State = this.initialState;
+    // User data:
+    const [amounts, setAmounts] = useState<Map<number, Amount>>(new Map());
+    const [userRates, setUserRates] = useState<Map<number, UserRate>>(new Map());
+    const [userConfig, setUserConfig] = useState<UserConfig | undefined>(undefined);
+    const [currenciesSet, setCurrenciesSet] = useState<Set<string> | undefined>(undefined);
 
-    private deleteDb = async (): Promise<void> => {
-        const dbRepository = this.state.dbRepository!;
+    // Api data:
+    const [exchangeRates, setExchangeRates] = useState<Map<string, CurrencyInfo>>(new Map());
+
+    const deleteDb: LoadingButtonClickHandler<WalletRepository> = async (repository): Promise<void> => {
         if (confirm("Are you sure you want to delete the local DB?")) {
-            await dbRepository.deleteIndexedDB();
-            console.warn(`Database "${dbRepository.dbName}" has been deleted.`);
-            await this.initialize();
+            await repository.deleteIndexedDB();
+            console.warn(`Database "${repository.dbName}" has been deleted.`);
+            setDbRepository(undefined);
         }
     };
 
-    private onDbDataChanged = (): void => {
-        this.loadDbData(this.state.dbRepository!).then(data => {
-            this.setState(data, () => console.log("DB data were changed."));
-        }).catch(error => {
-            this.setState(() => {
-                throw error;
-            });
+    const reloadUserData = (repository: WalletRepository): void => {
+        throwAsync(async () => {
+            let [freshAmounts, freshRates, freshConfig] = await Promise.all([
+                repository.amountRepository.getAll(),
+                repository.userRateRepository.getAll(),
+                repository.getUserConfig()
+            ]);
+
+            if (!freshConfig) {
+                await Promise.all([
+                    repository.setConfig({key: "selected_currency", value: props.defaultCurrency}),
+                    repository.setConfig({key: "light_theme", value: props.defaultLightTheme}),
+                    repository.setConfig({key: "dark_theme", value: props.defaultDarkTheme}),
+                ]);
+                freshConfig = (await repository.getUserConfig())!;
+                console.log("Config has been initialized.");
+            }
+
+            setAmounts(freshAmounts);
+            setUserRates(freshRates);
+            setUserConfig(freshConfig);
+            setCurrenciesSet(repository.getUniqueCurrencies(freshConfig.selectedCurrencySymbol, freshAmounts, freshRates));
+            console.log("User data have been reloaded.");
         });
     };
 
-    private loadFreshExchangeRates = async (dbRepository: WalletRepository): Promise<void> => {
-        try {
-            const rawRates = await this.coingeckoRepository.getExchangeRates();
-            await dbRepository.setExchangeRates(rawRates);
-            console.debug("Fresh exchange rates were loaded from coingecko and saved into the DB.");
-        } catch (error) {
-            throw new Error(`Unable to load fresh exchange rates: ${error}`);
-        }
+    const reloadApiData = (repository: WalletRepository): void => {
+        throwAsync(async () => {
+            setExchangeRates(await repository.getExchangeRates());
+        });
     };
 
-    private async loadDbData(dbRepository: WalletRepository): Promise<State> {
-        const [exchangeRates, amounts, userRates, timestamp, selectedCurrency, lightTheme, darkTheme] = await Promise.all([
-            dbRepository.getExchangeRates(),
-            dbRepository.amountRepository.getAll(),
-            dbRepository.userRateRepository.getAll(),
-            dbRepository.getConfig("last_update_timestamp"),
-            dbRepository.getConfig("selected_currency"),
-            dbRepository.getConfig("light_theme"),
-            dbRepository.getConfig("dark_theme"),
-        ]);
-        return {
-            dbRepository: dbRepository,
-            exchangeRates: exchangeRates,
-            amounts: amounts,
-            userRates: userRates,
-            ratesLastUpdateTimestamp: timestamp,
-            selectedCurrencySymbol: selectedCurrency,
-            lightTheme: lightTheme,
-            darkTheme: darkTheme,
-        };
-    }
-
-    private async initialize() {
-        const dbRepository = new WalletRepository();
-        await dbRepository.open(async (error: Error) => {
-            this.setState(() => {
-                throw error;
-            });
+    useEffect(() => {
+        throwAsync(async () => {
+            if (!dbRepository) {
+                const repository = new WalletRepository();
+                await repository.open(async (error: Error) => throwAsyncError(error));
+                setDbRepository(repository);
+                reloadUserData(repository);
+                reloadApiData(repository);
+            }
         });
+    }, [dbRepository]);
 
-        // Load data for the first time.
-        const data = await this.loadDbData(dbRepository);
-        if (data.exchangeRates.size === 0) {
-            await this.loadFreshExchangeRates(dbRepository);
-        }
-        if (data.selectedCurrencySymbol === undefined) {
-            await dbRepository.setConfig({
-                key: "selected_currency",
-                value: this.props.defaultCurrency
-            });
-        }
-        if (data.lightTheme === undefined) {
-            await dbRepository.setConfig({
-                key: "light_theme",
-                value: this.props.defaultLightTheme
-            });
-        }
-        if (data.darkTheme === undefined) {
-            await dbRepository.setConfig({
-                key: "dark_theme",
-                value: this.props.defaultDarkTheme
-            });
-        }
-
-        // Load the updated data for the second time.
-        this.setState(await this.loadDbData(dbRepository), () => {
-            console.info("App data were initialized.");
-        });
+    if (!dbRepository || !userConfig || !currenciesSet) {
+        return <DbLoadingFallback/>;
     }
-
-    componentDidMount() {
-        console.debug(`Component "${this.constructor.name}" was mounted.`);
-        document.title = "Multi-currency Wallet";
-
-        if (!this.state.dbRepository) {
-            this.initialize().catch(error => {
-                this.setState(() => {
-                    throw error;
-                });
-            });
-        }
-    }
-
-    render() {
-        // @TODO: "Object.values(this.state).every(item => item !== undefined)" can be useful here,
-        // @TODO: but it looks like TypeScript type narrowing doesn't recognize it.
-        if (this.state.dbRepository === undefined || this.state.ratesLastUpdateTimestamp === undefined
-            || this.state.selectedCurrencySymbol === undefined || this.state.lightTheme === undefined
-            || this.state.darkTheme === undefined) {
-            return (<DbLoadingFallback/>);
-        }
-        return (
-            <ThemeLoader theme={this.props.isDarkMode ? this.state.darkTheme : this.state.lightTheme}
-                         fallback={<ThemeLoadingFallback/>}>
-                <AppNavbar>
-                    <ThemeConfigurator dbRepository={this.state.dbRepository} onChange={this.onDbDataChanged}
-                                       isDarkMode={this.props.isDarkMode}
-                                       installedLightTheme={this.state.lightTheme}
-                                       installedDarkTheme={this.state.darkTheme}/>
-                </AppNavbar>
-                <div className={"container-xl mt-2 mb-2"}>
-                    <ExchangeRatesUpdater dbRepository={this.state.dbRepository}
-                                          ratesLastUpdateTimestamp={this.state.ratesLastUpdateTimestamp}
-                                          loadFreshExchangeRates={this.loadFreshExchangeRates}
-                                          onChange={this.onDbDataChanged}/>
-                    <div className={"row"}>
-                        <div className={"col-12 col-xl-5"}>
-                            <UserRatesTable rateRepository={this.state.dbRepository.userRateRepository}
-                                            exchangeRates={this.state.exchangeRates}
-                                            userRates={this.state.userRates}
-                                            onChange={this.onDbDataChanged}/>
-                        </div>
-                        <div className={"col-12 col-xl-7"}>
-                            <AmountsTable dbRepository={this.state.dbRepository}
-                                          amounts={this.state.amounts}
-                                          exchangeRates={this.state.exchangeRates}
-                                          selectedCurrencySymbol={this.state.selectedCurrencySymbol}
-                                          onAmountsChange={this.onDbDataChanged}
-                                          onSelectedCurrencyChange={this.onDbDataChanged}/>
-                        </div>
+    return <>
+        <ThemeLoader theme={props.isDarkMode ? userConfig.darkTheme : userConfig.lightTheme}
+                     fallback={<ThemeLoadingFallback/>}>
+            <AppNavbar>
+                <ThemeConfigurator dbRepository={dbRepository} onChange={() => reloadUserData(dbRepository)}
+                                   isDarkMode={props.isDarkMode}
+                                   installedLightTheme={userConfig.lightTheme}
+                                   installedDarkTheme={userConfig.darkTheme}/>
+            </AppNavbar>
+            <div className={"container-xl mt-2 mb-2"}>
+                <ApiDataUpdater dbRepository={dbRepository}
+                                userCurrenciesSet={currenciesSet}
+                                onChange={() => reloadApiData(dbRepository)}/>
+                <div className={"row"}>
+                    <div className={"col-12 col-xl-5"}>
+                        <UserRatesTable dbRepository={dbRepository}
+                                        exchangeRates={exchangeRates}
+                                        userRates={userRates}
+                                        onChange={() => reloadUserData(dbRepository)}/>
                     </div>
-                    <LoadingButton buttonProps={{variant: "danger"}} onClick={this.deleteDb}>
-                        <span className={"icon"} dangerouslySetInnerHTML={{__html: warningIcon}}/>
-                        &nbsp;Clear DB
-                    </LoadingButton>
+                    <div className={"col-12 col-xl-7"}>
+                        <AmountsTable dbRepository={dbRepository}
+                                      amounts={amounts}
+                                      exchangeRates={exchangeRates}
+                                      selectedCurrencySymbol={userConfig.selectedCurrencySymbol} // @TODO: move into AmountsTable.
+                                      onAmountsChange={() => reloadUserData(dbRepository)}
+                                      onSelectedCurrencyChange={() => reloadUserData(dbRepository)}/>
+                    </div>
                 </div>
-            </ThemeLoader>
-        );
-    }
+                <LoadingButton buttonProps={{variant: "danger"}} payload={dbRepository} onClick={deleteDb}>
+                    <span className={"icon"} dangerouslySetInnerHTML={{__html: warningIcon}}/>
+                    &nbsp;Clear DB
+                </LoadingButton>
+            </div>
+        </ThemeLoader>
+    </>;
 }
 
 class DbLoadingFallback extends React.Component {

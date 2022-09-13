@@ -29,14 +29,17 @@ export function formatAmount(amount: number): string {
     return amount.toFixed(fractionDigits);
 }
 
-export function convertAmountToCurrency(exchangeRates: Map<string, CurrencyInfo>, amount: Amount, symbol: string): number {
+export function convertAmountToCurrency(exchangeRates: Map<string, CurrencyInfo>, amount: Amount,
+                                        symbol: string): number {
     if (amount.amount === 0) {
         return 0;
     }
     return amount.amount / getRelativeExchangeRate(exchangeRates, symbol, amount.symbol);
 }
 
-export async function delay(ms: number): Promise<void> {
+export async function delay(ms: number, msg: string | undefined = undefined): Promise<void> {
+    const baseMsg = `Sleep for ${ms} ms`;
+    console.debug(msg ? `${baseMsg}: ${msg}` : `${baseMsg}...`);
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 

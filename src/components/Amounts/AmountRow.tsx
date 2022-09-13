@@ -1,13 +1,14 @@
-import React, {ReactNode} from "react";
-import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
-import {LoadingButton} from "../Utils/LoadingButton";
-import {convertAmountToCurrency, formatAmount} from "../../helpers";
-import {PutAmount} from "./PutAmount";
-import deleteIcon from "bootstrap-icons/icons/trash3.svg?raw";
-import editIcon from "bootstrap-icons/icons/pencil.svg?raw";
-import arrowUpIcon from "bootstrap-icons/icons/arrow-up.svg?raw";
 import arrowDownIcon from "bootstrap-icons/icons/arrow-down.svg?raw";
+import arrowUpIcon from "bootstrap-icons/icons/arrow-up.svg?raw";
+import editIcon from "bootstrap-icons/icons/pencil.svg?raw";
+import deleteIcon from "bootstrap-icons/icons/trash3.svg?raw";
+import React, {ReactNode} from "react";
+import {convertAmountToCurrency, formatAmount} from "../../helpers";
 import {DoublyLinkedListRepository} from "../../repositories/DoublyLinkedListRepository";
+import {Amount, CurrencyInfo} from "../../repositories/WalletRepository";
+import {LoadingButton, LoadingButtonClickHandler} from "../Utils/LoadingButton";
+import StandardPlaceholder from "../Utils/StandardPlaceholder";
+import {PutAmount} from "./PutAmount";
 
 export class AmountRow extends React.Component<{
     amountRepository: DoublyLinkedListRepository<Amount>,
@@ -17,29 +18,27 @@ export class AmountRow extends React.Component<{
     selectedCurrencySymbol: string,
     onChange: () => void,
 }> {
-    private moveUp = async (): Promise<void> => {
+    private moveUp: LoadingButtonClickHandler<null> = async (): Promise<void> => {
         await this.props.amountRepository.moveUp(this.props.amountId);
         this.props.onChange();
     };
 
-    private moveDown = async (): Promise<void> => {
+    private moveDown: LoadingButtonClickHandler<null> = async (): Promise<void> => {
         await this.props.amountRepository.moveDown(this.props.amountId);
         this.props.onChange();
     };
 
-    private delete = async (): Promise<void> => {
-        if (confirm(this.getAmountDeletionMsg(this.props.amount))) {
+    private delete: LoadingButtonClickHandler<CurrencyInfo> = async (currencyInfo): Promise<void> => {
+        if (confirm(this.getAmountDeletionMsg(currencyInfo))) {
             await this.props.amountRepository.delete(this.props.amountId);
             console.debug(`Amount with key "${this.props.amountId}" has been deleted.`, this.props.amount);
             this.props.onChange();
         }
     };
 
-    private getAmountDeletionMsg(amount: Amount): string {
-        const unit = this.props.exchangeRates.get(amount.symbol)!.unit;
-        let msg = `Are you sure you want to delete ${amount.amount} ${unit} `;
-        msg += amount.comment === undefined ? "?" : `(${amount.comment}) ?`;
-
+    private getAmountDeletionMsg(currencyInfo: CurrencyInfo): string {
+        let msg = `Are you sure you want to delete ${this.props.amount.amount} ${currencyInfo.unit} `;
+        msg += this.props.amount.comment === undefined ? "?" : `(${this.props.amount.comment}) ?`;
         return msg;
     }
 
@@ -56,8 +55,17 @@ export class AmountRow extends React.Component<{
     };
 
     render(): ReactNode {
-        const currencyInfo = this.props.exchangeRates.get(this.props.amount.symbol)!;
-        const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol)!;
+        const currencyInfo = this.props.exchangeRates.get(this.props.amount.symbol);
+        const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol);
+        if (!currencyInfo || !selectedCurrencyInfo) {
+            return (
+                <tr>
+                    <td colSpan={8}><StandardPlaceholder/></td>
+                </tr>
+            );
+        }
+
+
         const amountInSelectedCurrency = convertAmountToCurrency(
             this.props.exchangeRates,
             this.props.amount,
@@ -81,7 +89,7 @@ export class AmountRow extends React.Component<{
                     </div>
                 </td>
                 <td className={"text-center"}>
-                    {/* Use key to force recreate PutAmount component */}
+                    {/* Use a key to force recreate PutAmount component */}
                     {/* to avoid syncing the state when props are changed.*/}
                     {/* @see https://reactjs.org/blog/2018/06/07/you-probably-dont-need-derived-state.html#recommendation-fully-uncontrolled-component-with-a-key */}
                     <PutAmount key={[this.props.amountId, JSON.stringify(this.props.amount)].join()}
@@ -99,19 +107,19 @@ export class AmountRow extends React.Component<{
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}
-                                   onClick={this.moveUp}>
+                                   payload={null} onClick={this.moveUp}>
                         <span className={"icon"} dangerouslySetInnerHTML={{__html: arrowUpIcon}}/>
                     </LoadingButton>
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}
-                                   onClick={this.moveDown}>
+                                   payload={null} onClick={this.moveDown}>
                         <span className={"icon"} dangerouslySetInnerHTML={{__html: arrowDownIcon}}/>
                     </LoadingButton>
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "danger", size: "sm"}}
-                                   onClick={this.delete}>
+                                   payload={currencyInfo} onClick={this.delete}>
                         <span className={"icon"} dangerouslySetInnerHTML={{__html: deleteIcon}}/>
                     </LoadingButton>
                 </td>

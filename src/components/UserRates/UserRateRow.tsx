@@ -1,32 +1,33 @@
-import React, {ReactNode} from "react";
-import {CurrencyInfo, UserRate} from "../../repositories/WalletRepository";
-import {formatAmount, getRelativeExchangeRate, showError} from "../../helpers";
-import {LoadingButton} from "../Utils/LoadingButton";
-import {DoublyLinkedListRepository} from "../../repositories/DoublyLinkedListRepository";
-import deleteIcon from "bootstrap-icons/icons/trash3.svg?raw";
-import arrowUpIcon from "bootstrap-icons/icons/arrow-up.svg?raw";
 import arrowDownIcon from "bootstrap-icons/icons/arrow-down.svg?raw";
+import arrowUpIcon from "bootstrap-icons/icons/arrow-up.svg?raw";
+import deleteIcon from "bootstrap-icons/icons/trash3.svg?raw";
+import React, {ReactNode} from "react";
+import {formatAmount, getRelativeExchangeRate, showError} from "../../helpers";
+import {CurrencyInfo, UserRate, WalletRepository} from "../../repositories/WalletRepository";
+import HistoryChart from "../History/HistoryChart";
+import {LoadingButton} from "../Utils/LoadingButton";
+import StandardPlaceholder from "../Utils/StandardPlaceholder";
 
 export class UserRateRow extends React.Component<{
     id: number,
     rate: UserRate,
     exchangeRates: Map<string, CurrencyInfo>,
-    rateRepository: DoublyLinkedListRepository<UserRate>,
+    dbRepository: WalletRepository,
     onChange: () => void,
 }> {
     private moveUp = async (): Promise<void> => {
-        await this.props.rateRepository.moveUp(this.props.id);
+        await this.props.dbRepository.userRateRepository.moveUp(this.props.id);
         this.props.onChange();
     };
 
     private moveDown = async (): Promise<void> => {
-        await this.props.rateRepository.moveDown(this.props.id);
+        await this.props.dbRepository.userRateRepository.moveDown(this.props.id);
         this.props.onChange();
     };
 
     private delete = async () => {
         if (confirm(`Are you sure you want to delete "${this.props.rate.symbol1}/${this.props.rate.symbol2}" pair?`)) {
-            this.props.rateRepository.delete(this.props.id).then(() => {
+            this.props.dbRepository.userRateRepository.delete(this.props.id).then(() => {
                 this.props.onChange();
                 console.debug(`Favorite exchange rates pair with key "${this.props.id}" has been deleted.`);
             }).catch((error: Error) => {
@@ -36,8 +37,16 @@ export class UserRateRow extends React.Component<{
     };
 
     render(): ReactNode {
-        const currencyInfo1 = this.props.exchangeRates.get(this.props.rate.symbol1)!;
-        const currencyInfo2 = this.props.exchangeRates.get(this.props.rate.symbol2)!;
+        const currencyInfo1 = this.props.exchangeRates.get(this.props.rate.symbol1);
+        const currencyInfo2 = this.props.exchangeRates.get(this.props.rate.symbol2);
+        if (!currencyInfo1 || !currencyInfo2) {
+            return (
+                <tr>
+                    <td colSpan={6}><StandardPlaceholder/></td>
+                </tr>
+            );
+        }
+
         return (
             <tr key={this.props.id}>
                 <td className={"text-nowrap"} title={`${currencyInfo1.name} / ${currencyInfo2.name}`}>
@@ -48,20 +57,24 @@ export class UserRateRow extends React.Component<{
                     {" "}{currencyInfo2.unit}
                 </td>
                 <td className={"text-center"}>
+                    <HistoryChart ohlcRepository={this.props.dbRepository.ohlcRepository}
+                                  symbol1={this.props.rate.symbol1} symbol2={this.props.rate.symbol2}/>
+                </td>
+                <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}
-                                   onClick={this.moveUp}>
+                                   payload={null} onClick={this.moveUp}>
                         <span className={"icon"} dangerouslySetInnerHTML={{__html: arrowUpIcon}}/>
                     </LoadingButton>
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}
-                                   onClick={this.moveDown}>
+                                   payload={null} onClick={this.moveDown}>
                         <span className={"icon"} dangerouslySetInnerHTML={{__html: arrowDownIcon}}/>
                     </LoadingButton>
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "danger", size: "sm"}}
-                                   onClick={this.delete}>
+                                   payload={null} onClick={this.delete}>
                         <span className={"icon"} dangerouslySetInnerHTML={{__html: deleteIcon}}/>
                     </LoadingButton>
                 </td>

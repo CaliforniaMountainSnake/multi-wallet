@@ -1,7 +1,8 @@
 import React, {ReactNode} from "react";
-import {CurrencySelect} from "../Utils/CurrencySelect";
-import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
 import {convertAmountToCurrency, formatAmount} from "../../helpers";
+import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
+import {CurrencySelect} from "../Utils/CurrencySelect";
+import StandardPlaceholder from "../Utils/StandardPlaceholder";
 
 export class AmountTotalRow extends React.Component<{
     dbRepository: WalletRepository,
@@ -23,8 +24,7 @@ export class AmountTotalRow extends React.Component<{
         });
     };
 
-    private calculateTotalSum(): number {
-        const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol)!;
+    private calculateTotalSum(selectedCurrencyInfo: CurrencyInfo): number {
         let resultSum = 0;
         for (const amount of this.props.amounts.values()) {
             if (amount.enabled) {
@@ -35,17 +35,21 @@ export class AmountTotalRow extends React.Component<{
     }
 
     render(): ReactNode {
-        const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol)!;
+        const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol);
         return (
             <tr>
                 <th>Total:</th>
                 <td className={"text-nowrap"}>
-                    {formatAmount(this.calculateTotalSum())} {selectedCurrencyInfo.unit}
+                    {selectedCurrencyInfo
+                        ? `${formatAmount(this.calculateTotalSum(selectedCurrencyInfo))} ${selectedCurrencyInfo.unit}`
+                        : <StandardPlaceholder/>}
                 </td>
                 <td colSpan={6}>
-                    <CurrencySelect className={"form-select"}
-                                    exchangeRates={this.props.exchangeRates}
-                                    value={selectedCurrencyInfo.symbol} onChange={this.updateSelectedCurrency}/>
+                    {selectedCurrencyInfo
+                        ? <CurrencySelect className={"form-select"}
+                                          exchangeRates={this.props.exchangeRates}
+                                          value={selectedCurrencyInfo.symbol} onChange={this.updateSelectedCurrency}/>
+                        : <StandardPlaceholder/>}
                 </td>
             </tr>
         );

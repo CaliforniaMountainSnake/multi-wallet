@@ -1,11 +1,10 @@
 import React, {ReactNode} from "react";
+import {CurrencyInfo, UserRate, WalletRepository} from "../../repositories/WalletRepository";
 import {AddNewRate} from "./AddNewRate";
-import {CurrencyInfo, UserRate} from "../../repositories/WalletRepository";
 import {UserRateRow} from "./UserRateRow";
-import {DoublyLinkedListRepository} from "../../repositories/DoublyLinkedListRepository";
 
 export class UserRatesTable extends React.Component<{
-    rateRepository: DoublyLinkedListRepository<UserRate>,
+    dbRepository: WalletRepository,
     exchangeRates: Map<string, CurrencyInfo>,
     userRates: Map<number, UserRate>,
     onChange: () => void,
@@ -15,7 +14,7 @@ export class UserRatesTable extends React.Component<{
         for (const [id, rate] of this.props.userRates) {
             rows.push(
                 <UserRateRow key={id} id={id} rate={rate} exchangeRates={this.props.exchangeRates}
-                             rateRepository={this.props.rateRepository}
+                             dbRepository={this.props.dbRepository}
                              onChange={this.props.onChange}/>
             );
         }
@@ -24,7 +23,8 @@ export class UserRatesTable extends React.Component<{
             <div>
                 <h2 className={"card-title"}>Exchange rates</h2>
                 <AddNewRate className={"mb-2"}
-                            rateRepository={this.props.rateRepository} exchangeRates={this.props.exchangeRates}
+                            rateRepository={this.props.dbRepository.userRateRepository}
+                            exchangeRates={this.props.exchangeRates}
                             onChange={this.props.onChange}/>
                 <div className={"table-responsive"}>
                     <table className={"table table-bordered align-middle"}>

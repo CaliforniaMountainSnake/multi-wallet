@@ -1,38 +1,36 @@
-import React, {ReactNode} from "react";
+import React, {ReactNode, useEffect, useState} from "react";
 import {Button, ButtonProps} from "react-bootstrap";
+import useThrowAsync from "../../hooks/useThrowAsync";
 
-interface State {
-    loading: boolean;
-}
+export type LoadingButtonClickHandler<T> = (payload: T, feedback?: (progress: string) => void) => Promise<void>
 
-export class LoadingButton<T> extends React.Component<{
+export function LoadingButton<T>(props: {
     children: ReactNode,
-    onClick: (payload?: T) => Promise<void>,
-    buttonProps: Omit<ButtonProps, "onClick" | "children" | "disabled">
-    payload?: T,
-}, State> {
-    state: State = {
-        loading: false
-    };
+    payload: T,
+    onClick: LoadingButtonClickHandler<T>,
+    buttonProps: Omit<ButtonProps, "onClick" | "children">
+}): JSX.Element {
+    const {throwAsync} = useThrowAsync();
+    const [isLoading, setLoading] = useState<boolean>(false);
+    const [progress, setProgress] = useState<string | undefined>(undefined);
 
-    private _handleClick = (): void => {
-        this.setState({loading: true}, () => {
-            this.props.onClick(this.props.payload).catch(error => {
-                this.setState(() => {
-                    throw error;
-                });
-            }).finally(() => {
-                this.setState({loading: false});
+    const handleClick = (): void => setLoading(true);
+
+    useEffect(() => {
+        if (isLoading) {
+            throwAsync(async () => props.onClick(props.payload, (progress: string) => {
+                setProgress(progress);
+            })).finally(() => {
+                setLoading(false);
+                setProgress(undefined);
             });
-        });
-    };
+        }
+    }, [isLoading]);
 
-    render(): ReactNode {
-        const systemProps: ButtonProps = {
-            children: this.props.children,
-            onClick: this._handleClick,
-            disabled: this.state.loading,
-        };
-        return React.createElement(Button, Object.assign(systemProps, this.props.buttonProps));
-    }
+    const systemProps: ButtonProps = {
+        children: progress ? progress : props.children,
+        onClick: handleClick,
+        disabled: props.buttonProps.disabled || isLoading,
+    };
+    return React.createElement(Button, {...props.buttonProps, ...systemProps});
 }
