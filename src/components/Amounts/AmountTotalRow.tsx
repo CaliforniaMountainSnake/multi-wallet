@@ -47,8 +47,10 @@ export class AmountTotalRow extends React.Component<{
 
         const activeAmounts: Amount[] = [...this.props.amounts.values()]
             .filter(amount => amount.enabled);
-        const targetTotalCurrencies: TargetCurrencies = new Map(activeAmounts
-            .map(amount => [amount.symbol, amount.amount]));
+        const targetTotalCurrencies: TargetCurrencies = activeAmounts.map(amount => ({
+            symbol: amount.symbol,
+            amount: amount.amount,
+        }));
 
         return (
             <tr>

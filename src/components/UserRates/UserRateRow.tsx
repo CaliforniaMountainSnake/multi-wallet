@@ -61,7 +61,7 @@ export class UserRateRow extends React.Component<{
                                   buttonProps={{variant: "secondary", size: "sm"}}
                                   ohlcRepository={this.props.dbRepository.ohlcRepository}
                                   vsCurrency={this.props.rate.symbol2}
-                                  targetCurrencies={new Map([[this.props.rate.symbol1, 1]])}/>
+                                  targetCurrencies={[{symbol: this.props.rate.symbol1, amount: 1}]}/>
                 </td>
                 <td className={"text-center"}>
                     <LoadingButton buttonProps={{variant: "secondary", size: "sm"}}

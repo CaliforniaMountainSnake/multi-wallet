@@ -52,3 +52,43 @@ export function getRelativeExchangeRate(exchangeRates: Map<string, CurrencyInfo>
 
     return (cur2.value / cur1.value);
 }
+
+/**
+ * Format bytes as human-readable text.
+ *
+ * @param bytes Number of bytes.
+ * @param si True to use metric (SI) units, aka powers of 1000. False to use
+ *           binary (IEC), aka powers of 1024.
+ * @param dp Number of decimal places to display.
+ *
+ * @see https://stackoverflow.com/a/14919494
+ * @return Formatted string.
+ */
+export function formatNumberToHumanReadable(bytes: number, si: boolean = true, dp: number = 1): string {
+    // parseFloat removes trailing decimal zeros.
+    // @see https://stackoverflow.com/a/19623253
+    const roundNumber = (number: number): number => {
+        return parseFloat(number.toFixed(dp));
+    };
+
+    const thresh: number = si ? 1000 : 1024;
+    if (bytes === 0) {
+        return "0";
+    }
+    if (Math.abs(bytes) < thresh) {
+        return roundNumber(bytes).toString();
+    }
+
+    const units = si
+        ? ["K", "M", "B", "T", "Qua", "Qui", "Sex", "Sep"]
+        : ["Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"];
+    let u: number = -1;
+    const r: number = 10 ** dp;
+
+    do {
+        bytes /= thresh;
+        ++u;
+    } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+    return `${roundNumber(bytes)} ${units[u]}`;
+}

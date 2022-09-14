@@ -4,11 +4,15 @@ import React, {useEffect, useState} from "react";
 import Chart from "react-apexcharts";
 import {Button, Modal} from "react-bootstrap";
 import {ButtonProps} from "react-bootstrap/Button";
+import {formatNumberToHumanReadable} from "../../helpers";
 import useThrowAsync from "../../hooks/useThrowAsync";
-import {OHLCRepository, PriceCandle} from "../../repositories/OHLCRepository";
+import {OHLCRepository, PriceCandle, PriceCandlesMap} from "../../repositories/OHLCRepository";
 import StandardPlaceholder from "../Utils/StandardPlaceholder";
 
-export type TargetCurrencies = Map<PriceCandle["symbol"], number>
+export type TargetCurrencies = {
+    symbol: PriceCandle["symbol"],
+    amount: number,
+}[]
 
 type ApexTimeSeriesData = {
     x: Date;
@@ -52,9 +56,9 @@ export default function HistoryChart(props: {
         }
 
         throwAsync(async () => {
-            const targetCandles: [Map<number, PriceCandle>, number][] = [];
-            for (const [currency, amount] of props.targetCurrencies.entries()) {
-                targetCandles.push([await props.ohlcRepository.getCandles(currency, chartDays), amount]);
+            const targetCandles: [PriceCandlesMap, number][] = [];
+            for (const targetCurrency of props.targetCurrencies) {
+                targetCandles.push([await props.ohlcRepository.getCandles(targetCurrency.symbol, chartDays), targetCurrency.amount]);
             }
             const vsCandles = await props.ohlcRepository.getCandles(props.vsCurrency, chartDays);
 
@@ -66,25 +70,27 @@ export default function HistoryChart(props: {
 
     return <>
         <Modal show={isModalShown}
-               backdrop="static" keyboard={false}
+               backdrop="static" keyboard={true}
                centered={true}
-               size={"lg"}
+               size={"xl"}
+               contentClassName={"min-vh-70"}
                onHide={onHideModal}>
             <Modal.Header closeButton>
                 <Modal.Title className={"text-uppercase"}>{props.title}</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-                {!chartData || props.targetCurrencies.size === 0 ? <StandardPlaceholder/>
+            <Modal.Body className={"p-0 h-100"}>
+                {!chartData ? <StandardPlaceholder/>
                     : chartData.length === 0 ?
-                        <>
+                        <div className={"p-3"}>
                             History data were not found for these currencies.
                             Please, update the API data.
-                        </>
+                        </div>
                         : <>
                             <Chart type={"area"}
+                                   height={"100%"}
                                    options={getChartOptions(props.vsCurrency)}
                                    series={flatPriceCandles(chartData, getChartSeriesName(props.targetCurrencies))}/>
-                            <div className={"d-flex flex-row justify-content-between"}>
+                            <div className={"d-flex flex-row justify-content-between p-3"}>
                                 {makeSetChartDaysButton(initialChartDays)}
                                 {makeSetChartDaysButton(30)}
                                 {makeSetChartDaysButton(90)}
@@ -101,33 +107,40 @@ export default function HistoryChart(props: {
     </>;
 }
 
-function calculateRelativePrice(targetCandles: [Map<number, PriceCandle>, number][],
-                                vsCandles: Map<number, PriceCandle>): PriceCandle[] {
+function calculateRelativePrice(targetCandles: [PriceCandlesMap, number][],
+                                vsCandles: PriceCandlesMap): PriceCandle[] {
     const result: PriceCandle[] = [];
     for (const [timestamp, vsCandle] of vsCandles.entries()) {
-        const targetPrice: [PriceCandle, number] = targetCandles.reduce((accumulator, currentValue) => {
+        const zeroCandle: PriceCandle = {...vsCandle, open: 0, high: 0, low: 0, close: 0};
+        const targetPrice = targetCandles.reduce((accumulator, currentValue) => {
             const [candles, amount] = currentValue;
             const candle = candles.get(timestamp);
             if (!candle) {
                 return accumulator;
             }
 
-            return [{
-                ...candle,
-                open: accumulator[0].open + (vsCandle.open / candle.open) * amount,
-                high: accumulator[0].high + (vsCandle.high / candle.high) * amount,
-                low: accumulator[0].low + (vsCandle.low / candle.low) * amount,
-                close: accumulator[0].close + (vsCandle.close / candle.close) * amount,
-            } as PriceCandle, ++accumulator[1]];
-        }, [{...vsCandle, open: 0, high: 0, low: 0, close: 0} as PriceCandle, 0]);
+            return {
+                summedCandle: {
+                    ...candle,
+                    open: accumulator.summedCandle.open + (vsCandle.open / candle.open) * amount,
+                    high: accumulator.summedCandle.high + (vsCandle.high / candle.high) * amount,
+                    low: accumulator.summedCandle.low + (vsCandle.low / candle.low) * amount,
+                    close: accumulator.summedCandle.close + (vsCandle.close / candle.close) * amount,
+                },
+                amountOfCandles: ++accumulator.amountOfCandles,
+            };
+        }, {
+            summedCandle: zeroCandle,
+            amountOfCandles: 0,
+        });
 
-        if (targetPrice[1] < targetCandles.length) {
+        if (targetPrice.amountOfCandles < targetCandles.length) {
             // just skip non-existed candles.
             // console.debug("Unable to find all candles for a timestamp:", new Date(timestamp));
             continue;
         }
 
-        result.push(targetPrice[0]);
+        result.push(targetPrice.summedCandle);
     }
     return result;
 }
@@ -141,14 +154,14 @@ function flatPriceCandles(data: PriceCandle[], name: string): ApexAxisChartSerie
 }
 
 function getChartSeriesName(targetCurrencies: TargetCurrencies): string {
-    return targetCurrencies.size === 1 ? [...targetCurrencies.keys()][0] : "amount";
+    return targetCurrencies.length === 1 ? targetCurrencies[0].symbol : "amount";
 }
 
 const getChartOptions = (vsCurrency: PriceCandle["symbol"]): ApexOptions => ({
     chart: {
         type: "area",
         stacked: false,
-        // height: 350,
+        // height: "100%",
         zoom: {
             // type: "x",
             enabled: true,
@@ -158,20 +171,24 @@ const getChartOptions = (vsCurrency: PriceCandle["symbol"]): ApexOptions => ({
             autoSelected: "zoom"
         }
     },
+    grid: {
+        padding: {
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+        }
+    },
     dataLabels: {
         enabled: false
     },
     markers: {
         size: 0,
     },
-    title: {
-        text: "Stock Price Movement",
-        align: "left"
-    },
     yaxis: {
         labels: {
             formatter(val: number): string | string[] {
-                return val.toFixed(2);
+                return formatNumberToHumanReadable(val);
             }
         },
     },

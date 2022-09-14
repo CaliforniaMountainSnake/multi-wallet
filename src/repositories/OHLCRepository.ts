@@ -1,6 +1,8 @@
 import {CoingeckoOHLCCandle, CoingeckoOHLCDays} from "./api/CoingeckoRepository";
 import {BasicIndexedDBRepository} from "./BasicIndexedDBRepository";
 
+export type PriceCandlesMap = Map<number, PriceCandle>
+
 export class OHLCRepository {
     public readonly storeName = "ohlc_candles";
     public readonly indexes = {
@@ -19,7 +21,7 @@ export class OHLCRepository {
      * @param symbol Currency symbol. (e.g. usd, btc, eth).
      * @param days Max number of rows returned.
      */
-    public async getCandles(symbol: PriceCandle["symbol"], days: number): Promise<Map<number, PriceCandle>> {
+    public async getCandles(symbol: PriceCandle["symbol"], days: number): Promise<PriceCandlesMap> {
         const config = this.getOHLCQueryConfig(days);
         return this.repository.transaction(async transaction => {
             const store = transaction.objectStore(this.storeName);
