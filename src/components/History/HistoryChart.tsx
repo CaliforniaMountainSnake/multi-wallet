@@ -2,11 +2,11 @@ import {ApexOptions} from "apexcharts";
 import chartIcon from "bootstrap-icons/icons/bar-chart-fill.svg?raw";
 import React, {useEffect, useState} from "react";
 import Chart from "react-apexcharts";
-import {Button, Modal} from "react-bootstrap";
+import {Badge, Button, Modal} from "react-bootstrap";
 import {ButtonProps} from "react-bootstrap/Button";
 import {formatNumberToHumanReadable} from "../../helpers";
 import useThrowAsync from "../../hooks/useThrowAsync";
-import {OHLCRepository, PriceCandle, PriceCandlesMap} from "../../repositories/OHLCRepository";
+import {OHLCRepository, PriceCandle, TimestampToCandleMap} from "../../repositories/OHLCRepository";
 import StandardPlaceholder from "../Utils/StandardPlaceholder";
 
 export type TargetCurrencies = {
@@ -14,10 +14,20 @@ export type TargetCurrencies = {
     amount: number,
 }[]
 
-type ApexTimeSeriesData = {
-    x: Date;
-    y: number;
-}[]
+interface ReducedCandle {
+    candle: PriceCandle,
+    amountOfCandles: number,
+}
+
+interface AmountAndCandles {
+    amount: number,
+    candles: TimestampToCandleMap,
+}
+
+interface ApexTimeSeriesPoint {
+    x: Date,
+    y: number,
+}
 
 export default function HistoryChart(props: {
     ohlcRepository: OHLCRepository,
@@ -56,9 +66,12 @@ export default function HistoryChart(props: {
         }
 
         throwAsync(async () => {
-            const targetCandles: [PriceCandlesMap, number][] = [];
+            const targetCandles: AmountAndCandles[] = [];
             for (const targetCurrency of props.targetCurrencies) {
-                targetCandles.push([await props.ohlcRepository.getCandles(targetCurrency.symbol, chartDays), targetCurrency.amount]);
+                targetCandles.push({
+                    amount: targetCurrency.amount,
+                    candles: await props.ohlcRepository.getCandles(targetCurrency.symbol, chartDays),
+                });
             }
             const vsCandles = await props.ohlcRepository.getCandles(props.vsCurrency, chartDays);
 
@@ -70,13 +83,15 @@ export default function HistoryChart(props: {
 
     return <>
         <Modal show={isModalShown}
-               backdrop="static" keyboard={true}
+               backdrop={true} keyboard={true}
                centered={true}
                size={"xl"}
                contentClassName={"min-vh-70"}
                onHide={onHideModal}>
             <Modal.Header closeButton>
-                <Modal.Title className={"text-uppercase"}>{props.title}</Modal.Title>
+                <Modal.Title className={"text-uppercase"}>
+                    {chartData && chartData.length > 0 && <PriceChangeBadge candles={chartData}/>} {props.title}
+                </Modal.Title>
             </Modal.Header>
             <Modal.Body className={"p-0 h-100"}>
                 {!chartData ? <StandardPlaceholder/>
@@ -107,50 +122,82 @@ export default function HistoryChart(props: {
     </>;
 }
 
-function calculateRelativePrice(targetCandles: [PriceCandlesMap, number][],
-                                vsCandles: PriceCandlesMap): PriceCandle[] {
+function PriceChangeBadge(props: { candles: PriceCandle[] }): JSX.Element {
+    const priceChange = getPriceChange(props.candles);
+    return (
+        <Badge bg={priceChange >= 0 ? "success" : "danger"}>
+            {priceChange >= 0 && "+"}{priceChange.toFixed(2)}%
+        </Badge>
+    );
+}
+
+function calculateRelativePrice(targetCandles: AmountAndCandles[], vsCandles: TimestampToCandleMap): PriceCandle[] {
     const result: PriceCandle[] = [];
     for (const [timestamp, vsCandle] of vsCandles.entries()) {
-        const zeroCandle: PriceCandle = {...vsCandle, open: 0, high: 0, low: 0, close: 0};
-        const targetPrice = targetCandles.reduce((accumulator, currentValue) => {
-            const [candles, amount] = currentValue;
-            const candle = candles.get(timestamp);
-            if (!candle) {
-                return accumulator;
-            }
-
-            return {
-                summedCandle: {
-                    ...candle,
-                    open: accumulator.summedCandle.open + (vsCandle.open / candle.open) * amount,
-                    high: accumulator.summedCandle.high + (vsCandle.high / candle.high) * amount,
-                    low: accumulator.summedCandle.low + (vsCandle.low / candle.low) * amount,
-                    close: accumulator.summedCandle.close + (vsCandle.close / candle.close) * amount,
-                },
-                amountOfCandles: ++accumulator.amountOfCandles,
-            };
-        }, {
-            summedCandle: zeroCandle,
-            amountOfCandles: 0,
-        });
-
-        if (targetPrice.amountOfCandles < targetCandles.length) {
+        const reducedCandle: ReducedCandle = reduceCandles(timestamp, vsCandle, targetCandles);
+        if (reducedCandle.amountOfCandles < targetCandles.length) {
             // just skip non-existed candles.
             // console.debug("Unable to find all candles for a timestamp:", new Date(timestamp));
             continue;
         }
 
-        result.push(targetPrice.summedCandle);
+        result.push(reducedCandle.candle);
     }
     return result;
 }
 
+/**
+ * Calculate a new candle price relative to the vsCandle. And sum these candles then.
+ *
+ * @param timestamp Unix timestamp.
+ * @param vsCandle A candle in which currency the total candle will be calculated.
+ * @param targetCandles
+ */
+function reduceCandles(timestamp: number, vsCandle: PriceCandle, targetCandles: AmountAndCandles[]): ReducedCandle {
+    const zeroCandle: ReducedCandle = {
+        amountOfCandles: 0,
+        candle: {...vsCandle, open: 0, high: 0, low: 0, close: 0},
+    };
+    return targetCandles.reduce((accumulator: ReducedCandle, currentValue) => {
+        const candle = currentValue.candles.get(timestamp);
+        if (!candle) {
+            return accumulator;
+        }
+
+        return {
+            candle: {
+                ...candle,
+                open: accumulator.candle.open + (vsCandle.open / candle.open) * currentValue.amount,
+                high: accumulator.candle.high + (vsCandle.high / candle.high) * currentValue.amount,
+                low: accumulator.candle.low + (vsCandle.low / candle.low) * currentValue.amount,
+                close: accumulator.candle.close + (vsCandle.close / candle.close) * currentValue.amount,
+            },
+            amountOfCandles: ++accumulator.amountOfCandles,
+        };
+    }, zeroCandle);
+}
+
+function getPriceChange(candles: PriceCandle[]): number {
+    if (candles.length < 2) {
+        return 0;
+    }
+
+    // Candles are reverse-ordered!
+    const lastPrice = flatCandle(candles[0]);
+    const firstPrice = flatCandle(candles[candles.length - 1]);
+    return ((lastPrice / firstPrice) - 1) * 100;
+}
+
 function flatPriceCandles(data: PriceCandle[], name: string): ApexAxisChartSeries {
-    const items: ApexTimeSeriesData = data.map(candle => ({
+    const items: ApexTimeSeriesPoint[] = data.map(candle => ({
         x: candle.timestamp,
-        y: (candle.open + candle.high + candle.low + candle.close) / 4,
+        y: flatCandle(candle),
     }));
     return [{data: items, name: name}];
+}
+
+function flatCandle(candle: PriceCandle): number {
+    return (candle.open + candle.high + candle.low + candle.close) / 4;
 }
 
 function getChartSeriesName(targetCurrencies: TargetCurrencies): string {
