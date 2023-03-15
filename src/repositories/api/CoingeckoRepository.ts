@@ -1,10 +1,10 @@
-import {delay} from "../../helpers";
+import { delay } from "../../helpers";
 
 export class CoingeckoRepository {
     /**
-     * Coingecko Free API* has a [rate limit](https://www.coingecko.com/ru/api/documentation) of 50 calls/minute.
+     * Coingecko Free API* has a [rate limit](https://www.coingecko.com/ru/api/documentation) of N calls/minute.
      */
-    private static readonly REQUESTS_PER_MINUTE_LIMIT = 50;
+    private static readonly REQUESTS_PER_MINUTE_LIMIT = 10;
 
     /**
      * Time in milliseconds to wait after each request to avoid API limits.
@@ -58,7 +58,7 @@ export class CoingeckoRepository {
 
     private async request(url: string): Promise<any> {
         await delay(CoingeckoRepository.REQUEST_DEBOUNCE_TIME_MS, "api debounce.");
-        const response: Response = await fetch(this.apiDomain + url, {headers: {"Accept": "application/json"}});
+        const response: Response = await fetch(this.apiDomain + url, { headers: { "Accept": "application/json" } });
         if (response.status !== 200) {
             throw new Error(`Wrong API response code (${response.status})`);
         }
