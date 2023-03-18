@@ -4,7 +4,7 @@ export class CoingeckoRepository {
     /**
      * Coingecko Free API* has a [rate limit](https://www.coingecko.com/ru/api/documentation) of N calls/minute.
      */
-    private static readonly REQUESTS_PER_MINUTE_LIMIT = 10;
+    private static readonly REQUESTS_PER_MINUTE_LIMIT = 5;
 
     /**
      * Time in milliseconds to wait after each request to avoid API limits.
