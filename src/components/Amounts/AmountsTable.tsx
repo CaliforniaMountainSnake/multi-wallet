@@ -20,7 +20,7 @@ export class AmountsTable extends React.Component<{
         const amounts = [];
         for (const [id, amount] of this.props.amounts.entries()) {
             amounts.push(
-                <AmountRow key={id} amountId={id} amount={amount}
+                <AmountRow key={id} amountId={id} amount={amount} amounts={this.props.amounts}
                            amountRepository={this.props.dbRepository.amountRepository}
                            exchangeRates={this.props.exchangeRates}
                            selectedCurrencySymbol={this.props.selectedCurrencySymbol}
@@ -48,6 +48,7 @@ export class AmountsTable extends React.Component<{
                                     Amount in {selectedCurrencyInfo.unit}
                                 </th>
                                 : <th><StandardPlaceholder/></th>}
+                            <th className={"text-nowrap"}>Amount in %</th>
                             <th>Comment</th>
                             <th colSpan={5}>Actions</th>
                         </tr>

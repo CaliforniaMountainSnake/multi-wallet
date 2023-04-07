@@ -1,7 +1,7 @@
-import {Amount, CurrencyInfo} from "./repositories/WalletRepository";
+import { Amount, CurrencyInfo } from "./repositories/WalletRepository";
 
 function showMessage(logger: (message?: any, ...optionalParams: any[]) => void = console.log,
-                     message?: any, ...optionalParams: any[]
+    message?: any, ...optionalParams: any[]
 ): void {
     logger(message, ...optionalParams);
     alert(message + " " + optionalParams.join(" "));
@@ -13,6 +13,25 @@ export function showError(message?: any, ...optionalParams: any[]): void {
 
 export function showWarning(message?: any, ...optionalParams: any[]): void {
     showMessage(console.warn, message, ...optionalParams);
+}
+
+export function convertAmountToCurrency(exchangeRates: Map<string, CurrencyInfo>,
+    amount: Amount, symbol: string): number {
+    if (amount.amount === 0) {
+        return 0;
+    }
+    return amount.amount / getRelativeExchangeRate(exchangeRates, symbol, amount.symbol);
+}
+
+export function calculateTotalSum(exchangeRates: Map<string, CurrencyInfo>, amounts: Map<number, Amount>,
+    selectedCurrencySymbol: string): number {
+    let resultSum = 0;
+    for (const amount of amounts.values()) {
+        if (amount.enabled) {
+            resultSum += convertAmountToCurrency(exchangeRates, amount, selectedCurrencySymbol);
+        }
+    }
+    return resultSum;
 }
 
 export function formatAmount(amount: number): string {
@@ -27,14 +46,6 @@ export function formatAmount(amount: number): string {
     }
 
     return amount.toFixed(fractionDigits);
-}
-
-export function convertAmountToCurrency(exchangeRates: Map<string, CurrencyInfo>, amount: Amount,
-                                        symbol: string): number {
-    if (amount.amount === 0) {
-        return 0;
-    }
-    return amount.amount / getRelativeExchangeRate(exchangeRates, symbol, amount.symbol);
 }
 
 export async function delay(ms: number, msg: string | undefined = undefined): Promise<void> {

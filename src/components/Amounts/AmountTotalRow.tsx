@@ -1,9 +1,9 @@
-import React, {ReactNode} from "react";
-import {InputGroup} from "react-bootstrap";
-import {convertAmountToCurrency, formatAmount} from "../../helpers";
-import {Amount, CurrencyInfo, WalletRepository} from "../../repositories/WalletRepository";
-import HistoryChart, {TargetCurrencies} from "../History/HistoryChart";
-import {CurrencySelect} from "../Utils/CurrencySelect";
+import React, { ReactNode } from "react";
+import { InputGroup } from "react-bootstrap";
+import { calculateTotalSum, formatAmount } from "../../helpers";
+import { Amount, CurrencyInfo, WalletRepository } from "../../repositories/WalletRepository";
+import HistoryChart, { TargetCurrencies } from "../History/HistoryChart";
+import { CurrencySelect } from "../Utils/CurrencySelect";
 
 export class AmountTotalRow extends React.Component<{
     dbRepository: WalletRepository,
@@ -24,16 +24,6 @@ export class AmountTotalRow extends React.Component<{
             });
         });
     };
-
-    private calculateTotalSum(selectedCurrencyInfo: CurrencyInfo): number {
-        let resultSum = 0;
-        for (const amount of this.props.amounts.values()) {
-            if (amount.enabled) {
-                resultSum += convertAmountToCurrency(this.props.exchangeRates, amount, selectedCurrencyInfo.symbol);
-            }
-        }
-        return resultSum;
-    }
 
     render(): ReactNode {
         const selectedCurrencyInfo = this.props.exchangeRates.get(this.props.selectedCurrencySymbol);
@@ -56,25 +46,27 @@ export class AmountTotalRow extends React.Component<{
             <tr>
                 <th>Total:</th>
                 <td className={"text-nowrap"}>
-                    {formatAmount(this.calculateTotalSum(selectedCurrencyInfo))} {selectedCurrencyInfo.unit}
+                    {formatAmount(calculateTotalSum(this.props.exchangeRates, this.props.amounts, selectedCurrencyInfo.symbol))}
+                    {selectedCurrencyInfo.unit}
                 </td>
+                <td>100 %</td>
                 <td colSpan={6}>
                     <div className={"d-flex flex-row justify-content-between"}>
                         <InputGroup>
                             <HistoryChart title={"Total portfolio price"}
-                                          buttonProps={{
-                                              variant: "secondary",
-                                              size: "sm",
-                                              disabled: activeAmounts.length === 0,
-                                              className: "mr-5",
-                                          }}
-                                          ohlcRepository={this.props.dbRepository.ohlcRepository}
-                                          vsCurrency={selectedCurrencyInfo.symbol}
-                                          targetCurrencies={targetTotalCurrencies}/>
+                                buttonProps={{
+                                    variant: "secondary",
+                                    size: "sm",
+                                    disabled: activeAmounts.length === 0,
+                                    className: "mr-5",
+                                }}
+                                ohlcRepository={this.props.dbRepository.ohlcRepository}
+                                vsCurrency={selectedCurrencyInfo.symbol}
+                                targetCurrencies={targetTotalCurrencies} />
 
                             <CurrencySelect className={"form-select"}
-                                            exchangeRates={this.props.exchangeRates}
-                                            value={selectedCurrencyInfo.symbol} onChange={this.updateSelectedCurrency}/>
+                                exchangeRates={this.props.exchangeRates}
+                                value={selectedCurrencyInfo.symbol} onChange={this.updateSelectedCurrency} />
                         </InputGroup>
                     </div>
                 </td>
