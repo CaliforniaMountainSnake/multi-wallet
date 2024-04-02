@@ -32,7 +32,7 @@ export class CoingeckoRepository {
      * @returns [timestamp, open, high, low, close][].
      */
     async getOHLC(coinId: string, vsCurrency: string, period: CoingeckoOHLCDays): Promise<CoingeckoOHLCCandle[]> {
-        const days = period === "4_hours_candle_30_days" ? 30 : "max";
+        const days = period === "4_hours_candle_30_days" ? 30 : 365;
         return await this.request(`/coins/${coinId}/ohlc?vs_currency=${vsCurrency}&days=${days}`);
     }
 

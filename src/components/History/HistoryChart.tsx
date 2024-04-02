@@ -111,7 +111,7 @@ export default function HistoryChart(props: {
                                 {makeSetChartDaysButton(90)}
                                 {makeSetChartDaysButton(180)}
                                 {makeSetChartDaysButton(365)}
-                                {makeSetChartDaysButton(Number.MAX_VALUE)}
+                                {/*{makeSetChartDaysButton(Number.MAX_VALUE)}*/}
                             </div>
                         </>}
             </Modal.Body>
